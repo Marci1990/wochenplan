@@ -8,8 +8,59 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const supabaseUrl = "https://rtcutlvjjxzmgzyavjjm.supabase.co";
-    const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o";
+
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+const APP_STATE_ID = "familie-hanst-main";
+
+async function saveData(){
+
+const payload = {
+dishes,
+week,
+stockItems,
+manualItems,
+checkedItems,
+servings,
+shoppingOverrides
+}
+
+await supabase
+.from("app_state")
+.upsert({
+id: APP_STATE_ID,
+data: payload,
+updated_at: new Date().toISOString()
+})
+
+}
+
+async function loadData(){
+
+const { data } = await supabase
+.from("app_state")
+.select("data")
+.eq("id",APP_STATE_ID)
+.maybeSingle()
+
+if(data && data.data){
+
+dishes = data.data.dishes || []
+week = data.data.week || Array(7).fill("")
+stockItems = data.data.stockItems || []
+manualItems = data.data.manualItems || []
+checkedItems = data.data.checkedItems || {}
+servings = data.data.servings || 2
+shoppingOverrides = data.data.shoppingOverrides || {}
+
+}else{
+
+await saveData()
+
+}
+
+}
   </script>
 
   <style>
