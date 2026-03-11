@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-const supabaseUrl = "https://rtcutlvjjxzmgzyavjjm.supabase.co"
-const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o"
-
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
-</script>  <meta charset="UTF-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Familie Hanst Wochenplan</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabaseUrl = "https://rtcutlvjjxzmgzyavjjm.supabase.co";
+    const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  </script>
+
   <style>
     :root{
       --bg:#fff7fb;
@@ -353,14 +354,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
       margin-top:12px;
     }
 
-    .recipe-head{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-      flex-wrap:wrap;
-    }
-
     .recipe-summary{
       display:flex;
       flex-wrap:wrap;
@@ -612,17 +605,8 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
       "Sonstiges"
     ];
 
-    const STORAGE = {
-      dishes: "hanst_compact_dishes_v1",
-      week: "hanst_compact_week_v1",
-      stock: "hanst_compact_stock_v1",
-      manual: "hanst_compact_manual_v1",
-      checked: "hanst_compact_checked_v1",
-      servings: "hanst_compact_servings_v1",
-      overrides: "hanst_compact_overrides_v1"
-    };
-
     const BASE_SERVINGS = 2;
+    const APP_STATE_ID = "familie-hanst-main";
 
     let dishes = [];
     let week = Array(7).fill("");
@@ -632,43 +616,124 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
     let servings = 2;
     let shoppingOverrides = {};
     let editingDishId = null;
+    let saveTimer = null;
+    let suppressRealtimeReload = false;
 
-    function saveData() {
-      localStorage.setItem(STORAGE.dishes, JSON.stringify(dishes));
-      localStorage.setItem(STORAGE.week, JSON.stringify(week));
-      localStorage.setItem(STORAGE.stock, JSON.stringify(stockItems));
-      localStorage.setItem(STORAGE.manual, JSON.stringify(manualItems));
-      localStorage.setItem(STORAGE.checked, JSON.stringify(checkedItems));
-      localStorage.setItem(STORAGE.servings, String(servings));
-      localStorage.setItem(STORAGE.overrides, JSON.stringify(shoppingOverrides));
+    function getDefaultState() {
+      return {
+        dishes: [],
+        week: Array(7).fill(""),
+        stockItems: [],
+        manualItems: [],
+        checkedItems: {},
+        servings: 2,
+        shoppingOverrides: {}
+      };
     }
 
-    function loadData() {
-      try {
-        dishes = JSON.parse(localStorage.getItem(STORAGE.dishes) || "[]");
-        week = JSON.parse(localStorage.getItem(STORAGE.week) || "[]");
-        stockItems = JSON.parse(localStorage.getItem(STORAGE.stock) || "[]");
-        manualItems = JSON.parse(localStorage.getItem(STORAGE.manual) || "[]");
-        checkedItems = JSON.parse(localStorage.getItem(STORAGE.checked) || "{}");
-        shoppingOverrides = JSON.parse(localStorage.getItem(STORAGE.overrides) || "{}");
-        servings = parseInt(localStorage.getItem(STORAGE.servings) || "2", 10);
+    function applyState(state) {
+      const safe = { ...getDefaultState(), ...(state || {}) };
 
-        if (!Array.isArray(dishes)) dishes = [];
-        if (!Array.isArray(week) || week.length !== 7) week = Array(7).fill("");
-        if (!Array.isArray(stockItems)) stockItems = [];
-        if (!Array.isArray(manualItems)) manualItems = [];
-        if (!checkedItems || typeof checkedItems !== "object") checkedItems = {};
-        if (!shoppingOverrides || typeof shoppingOverrides !== "object") shoppingOverrides = {};
-        if (!Number.isFinite(servings) || servings < 1) servings = 2;
-      } catch {
-        dishes = [];
-        week = Array(7).fill("");
-        stockItems = [];
-        manualItems = [];
-        checkedItems = {};
-        shoppingOverrides = {};
-        servings = 2;
+      dishes = Array.isArray(safe.dishes) ? safe.dishes : [];
+      week = Array.isArray(safe.week) && safe.week.length === 7 ? safe.week : Array(7).fill("");
+      stockItems = Array.isArray(safe.stockItems) ? safe.stockItems : [];
+      manualItems = Array.isArray(safe.manualItems) ? safe.manualItems : [];
+      checkedItems = safe.checkedItems && typeof safe.checkedItems === "object" ? safe.checkedItems : {};
+      shoppingOverrides = safe.shoppingOverrides && typeof safe.shoppingOverrides === "object" ? safe.shoppingOverrides : {};
+      servings = Number.isFinite(parseInt(safe.servings, 10)) ? parseInt(safe.servings, 10) : 2;
+    }
+
+    function buildState() {
+      return {
+        dishes,
+        week,
+        stockItems,
+        manualItems,
+        checkedItems,
+        servings,
+        shoppingOverrides
+      };
+    }
+
+    async function saveData() {
+      const payload = buildState();
+
+      try {
+        suppressRealtimeReload = true;
+        const { error } = await supabase
+          .from("app_state")
+          .upsert(
+            {
+              id: APP_STATE_ID,
+              data: payload,
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: "id" }
+          );
+
+        if (error) {
+          console.error("Supabase save error:", error);
+        }
+      } catch (err) {
+        console.error("Save failed:", err);
+      } finally {
+        setTimeout(() => {
+          suppressRealtimeReload = false;
+        }, 800);
       }
+    }
+
+    function queueSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveData();
+      }, 300);
+    }
+
+    async function loadData() {
+      try {
+        const { data, error } = await supabase
+          .from("app_state")
+          .select("data")
+          .eq("id", APP_STATE_ID)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Supabase load error:", error);
+          applyState(getDefaultState());
+          return;
+        }
+
+        if (data && data.data) {
+          applyState(data.data);
+        } else {
+          applyState(getDefaultState());
+          await saveData();
+        }
+      } catch (err) {
+        console.error("Load failed:", err);
+        applyState(getDefaultState());
+      }
+    }
+
+    function subscribeToState() {
+      supabase
+        .channel("familie-hanst-sync")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "app_state",
+            filter: `id=eq.${APP_STATE_ID}`
+          },
+          async () => {
+            if (suppressRealtimeReload) return;
+            await loadData();
+            render();
+          }
+        )
+        .subscribe();
     }
 
     function normalize(text) {
@@ -702,7 +767,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
 
     function updateServings(value) {
       servings = parseInt(value, 10) || 2;
-      saveData();
+      queueSave();
       render();
     }
 
@@ -830,7 +895,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
           });
 
           clearDishInputs();
-          saveData();
+          queueSave();
           render();
         };
 
@@ -863,7 +928,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
             expanded: false
           });
           clearDishInputs();
-          saveData();
+          queueSave();
           render();
         };
         reader.readAsDataURL(file);
@@ -882,7 +947,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
           expanded: false
         });
         clearDishInputs();
-        saveData();
+        queueSave();
         render();
       }
     }
@@ -898,7 +963,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
         });
       }
       if (editingDishId === id) clearDishInputs();
-      saveData();
+      queueSave();
       render();
     }
 
@@ -906,13 +971,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
       const dish = dishes.find(d => d.id === id);
       if (!dish) return;
       dish.favorite = !dish.favorite;
-      saveData();
+      queueSave();
       render();
     }
 
     function toggleDishExpanded(id) {
       dishes = dishes.map(d => d.id === id ? { ...d, expanded: !d.expanded } : d);
-      saveData();
       renderDishes();
     }
 
@@ -977,7 +1041,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
       document.getElementById("stockName").value = "";
       document.getElementById("stockAmount").value = "";
       document.getElementById("stockUnit").value = "";
-      saveData();
+      queueSave();
       render();
     }
 
@@ -1005,13 +1069,13 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
         x.id === id ? { ...x, name, amount, unit, editing:false } : { ...x, editing:false }
       );
 
-      saveData();
+      queueSave();
       render();
     }
 
     function deleteStockItem(id) {
       stockItems = stockItems.filter(x => x.id !== id);
-      saveData();
+      queueSave();
       render();
     }
 
@@ -1042,7 +1106,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
       document.getElementById("manualIngredientUnit").value = "";
       document.getElementById("manualIngredientFresh").value = "no";
       document.getElementById("manualIngredientArea").value = "Sonstiges";
-      saveData();
+      queueSave();
       render();
     }
 
@@ -1072,13 +1136,13 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
         x.id === id ? { ...x, name, amount, unit, fresh, area, editing:false } : { ...x, editing:false }
       );
 
-      saveData();
+      queueSave();
       render();
     }
 
     function deleteManualItem(id) {
       manualItems = manualItems.filter(x => x.id !== id);
-      saveData();
+      queueSave();
       render();
     }
 
@@ -1150,14 +1214,14 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
 
       week = result.slice(0, 7);
       checkedItems = {};
-      saveData();
+      queueSave();
       render();
     }
 
     function clearWeek() {
       week = Array(7).fill("");
       checkedItems = {};
-      saveData();
+      queueSave();
       render();
     }
 
@@ -1172,14 +1236,14 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
 
       week[index] = dish.name;
       checkedItems = {};
-      saveData();
+      queueSave();
       render();
     }
 
     function updateDay(index, value) {
       week[index] = normalize(value);
       checkedItems = {};
-      saveData();
+      queueSave();
       renderWeek();
       renderShopping();
       renderRecipeLinks();
@@ -1264,20 +1328,18 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
 
     function toggleChecked(key) {
       checkedItems[key] = !checkedItems[key];
-      saveData();
+      queueSave();
       renderShopping();
     }
 
     function startEditAuto(id) {
       shoppingOverrides[id] = shoppingOverrides[id] || {};
       shoppingOverrides[id].editing = true;
-      saveData();
       renderShopping();
     }
 
     function cancelEditAuto(id) {
       if (shoppingOverrides[id]) shoppingOverrides[id].editing = false;
-      saveData();
       renderShopping();
     }
 
@@ -1303,7 +1365,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
         editing:false
       };
 
-      saveData();
+      queueSave();
       render();
     }
 
@@ -1357,6 +1419,626 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
       window.open("https://www.google.com/search?q=" + encodeURIComponent(name + " Rezept"), "_blank");
     }
 
+    function searchMealChefkoch(name) {
+      window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(name) + "/Rezepte.html", "_blank");
+    }
+
+    function searchMealThermomix(name) {
+      window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(name), "_blank");
+    }
+
+    function searchGeneralGoogle() {
+      const value = getSearchValue();
+      if (!value) {
+        alert("Bitte einen Suchbegriff eingeben.");
+        return;
+      }
+      searchMealGoogle(value);
+    }
+
+    function searchGeneralChefkoch() {
+      const value = getSearchValue();
+      if (!value) {
+        alert("Bitte einen Suchbegriff eingeben.");
+        return;
+      }
+      searchMealChefkoch(value);
+    }
+
+    function searchGeneralThermomix() {
+      const value = getSearchValue();
+      if (!value) {
+        alert("Bitte einen Suchbegriff eingeben.");
+        return;
+      }
+      searchMealThermomix(value);
+    }
+
+    function exportData() {
+      const backup = {
+        dishes,
+        week,
+        stockItems,
+        manualItems,
+        checkedItems,
+        servings,
+        shoppingOverrides,
+        exportedAt: new Date().toISOString()
+      };
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type:"application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "familie-hanst-backup.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importDataFromFile(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+
+          if (!confirm("Backup importieren? Vorhandene Daten werden ersetzt.")) return;
+
+          applyState(data);
+          clearDishInputs();
+          await saveData();
+          render();
+          alert("Backup erfolgreich importiert.");
+        } catch {
+          alert("Backup konnte nicht gelesen werden.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function printPlan() {
+      renderPrintContent();
+      window.print();
+    }
+
+    function renderDishes() {
+      const box = document.getElementById("dishList");
+      box.innerHTML = "";
+
+      const recipeList = getFilteredRecipeList();
+
+      if (!recipeList.length) {
+        box.innerHTML = "<div class='subtle'>Keine passenden Rezepte gefunden.</div>";
+        return;
+      }
+
+      recipeList.forEach(dish => {
+        const div = document.createElement("div");
+        div.className = "compact-box";
+
+        const ingredientsText = dish.ingredients.map(i => {
+          const qty = [scaleAmount(i.amount), i.unit].filter(Boolean).join(" ");
+          return qty ? `${i.name} (${qty})` : i.name;
+        }).join(", ");
+
+        const summaryIngredients = ingredientsText.length > 100 ? ingredientsText.slice(0, 100) + "..." : ingredientsText;
+
+        div.innerHTML = `
+          <div class="compact-top">
+            <div class="compact-main">
+              <div class="title">${escapeHtml(dish.name)} ${dish.favorite ? "⭐" : ""}</div>
+              <div class="recipe-summary">
+                <span class="tag">${escapeHtml(dish.category || "Sonstiges")}</span>
+                ${dish.leftovers ? `<span class="pill pill-leftover">Reste möglich</span>` : ""}
+                ${dish.hint ? `<span class="pill pill-hint">Hinweis</span>` : ""}
+              </div>
+              <div class="meta">${escapeHtml(summaryIngredients)}</div>
+            </div>
+            <div class="compact-actions">
+              <button class="btn-small btn-secondary" type="button">${dish.expanded ? "Zuklappen" : "Aufklappen"}</button>
+            </div>
+          </div>
+
+          ${dish.expanded ? `
+            <div class="recipe-box">
+              <div class="meta"><strong>Zutaten:</strong> ${escapeHtml(ingredientsText)}</div>
+              ${dish.hint ? `<div class="hint-box"><strong>Hinweis:</strong> ${escapeHtml(dish.hint)}</div>` : ""}
+              ${dish.instructions ? `<div style="margin-top:8px;"><strong>Anleitung:</strong></div><div class="meta">${escapeHtml(dish.instructions).replace(/\n/g, "<br>")}</div>` : ""}
+              ${dish.image ? `<img class="recipe-img" src="${dish.image}" alt="Rezeptbild">` : ""}
+            </div>
+            <div class="actions">
+              <button class="btn-small btn-secondary" type="button">Favorit</button>
+              <button class="btn-small btn-secondary" type="button">Bearbeiten</button>
+              <button class="btn-small btn-secondary" type="button">Google</button>
+              <button class="btn-small btn-secondary" type="button">Chefkoch</button>
+              <button class="btn-small btn-secondary" type="button">Thermomix</button>
+              <button class="btn-small btn-danger" type="button">Löschen</button>
+            </div>
+          ` : `
+            <div class="actions">
+              <button class="btn-small btn-secondary" type="button">Favorit</button>
+              <button class="btn-small btn-secondary" type="button">Bearbeiten</button>
+              <button class="btn-small btn-danger" type="button">Löschen</button>
+            </div>
+          `}
+        `;
+
+        const buttons = div.querySelectorAll("button");
+
+        if (dish.expanded) {
+          buttons[0].addEventListener("click", () => toggleDishExpanded(dish.id));
+          buttons[1].addEventListener("click", () => toggleFavorite(dish.id));
+          buttons[2].addEventListener("click", () => startEditDish(dish.id));
+          buttons[3].addEventListener("click", () => searchMealGoogle(dish.name));
+          buttons[4].addEventListener("click", () => searchMealChefkoch(dish.name));
+          buttons[5].addEventListener("click", () => searchMealThermomix(dish.name));
+          buttons[6].addEventListener("click", () => removeDish(dish.id));
+        } else {
+          buttons[0].addEventListener("click", () => toggleDishExpanded(dish.id));
+          buttons[1].addEventListener("click", () => toggleFavorite(dish.id));
+          buttons[2].addEventListener("click", () => startEditDish(dish.id));
+          buttons[3].addEventListener("click", () => removeDish(dish.id));
+        }
+
+        box.appendChild(div);
+      });
+    }
+
+    function renderWeek() {
+      const box = document.getElementById("weekPlan");
+      box.innerHTML = "";
+
+      DAYS.forEach((day, index) => {
+        const currentMeal = week[index] || "";
+        const currentDish = getDishFromMealName(currentMeal);
+        const div = document.createElement("div");
+        div.className = "box day";
+
+        const options = dishes.map(d => {
+          const selected = d.name === currentMeal ? "selected" : "";
+          return `<option value="${escapeHtml(d.name)}" ${selected}>${escapeHtml(d.name)}</option>`;
+        }).join("");
+
+        div.innerHTML = `
+          <div class="title">${day}</div>
+          <div class="day-center">
+            <input type="text" value="${escapeHtml(currentMeal)}" placeholder="Gericht eintragen">
+            <select>
+              <option value="">Gespeichertes Gericht auswählen</option>
+              ${options}
+            </select>
+            ${currentDish && currentDish.hint ? `<div class="hint-box"><strong>Hinweis:</strong> ${escapeHtml(currentDish.hint)}</div>` : ""}
+            ${isLeftoverMealName(currentMeal) ? `<div class="leftover-box"><strong>Restetag:</strong> Geplante Resteverwertung</div>` : ""}
+          </div>
+          <div>
+            <button class="btn-success btn-small" type="button">Neu</button>
+          </div>
+        `;
+
+        const input = div.querySelector("input");
+        const select = div.querySelector("select");
+        const button = div.querySelector("button");
+
+        input.addEventListener("input", e => updateDay(index, e.target.value));
+        select.addEventListener("change", e => updateDay(index, e.target.value));
+        button.addEventListener("click", () => rerollDay(index));
+
+        box.appendChild(div);
+      });
+    }
+
+    function renderRecipeLinks() {
+      const box = document.getElementById("recipeLinks");
+      box.innerHTML = "";
+
+      const meals = [...new Set(week.filter(Boolean))];
+      if (!meals.length) {
+        box.innerHTML = "<div class='subtle'>Noch kein Wochenplan vorhanden.</div>";
+        return;
+      }
+
+      meals.forEach(meal => {
+        const dish = getDishFromMealName(meal);
+        const div = document.createElement("div");
+        div.className = "box";
+        div.innerHTML = `
+          <div class="title">${escapeHtml(meal)}</div>
+          ${dish && dish.instructions ? `<div class="meta">${escapeHtml(dish.instructions).slice(0,180)}${dish.instructions.length > 180 ? "..." : ""}</div>` : ""}
+          ${dish && dish.hint ? `<div class="hint-box"><strong>Hinweis:</strong> ${escapeHtml(dish.hint)}</div>` : ""}
+          <div class="actions">
+            <button class="btn-small btn-secondary" type="button">Google Rezept</button>
+            <button class="btn-small btn-secondary" type="button">Chefkoch</button>
+            <button class="btn-small btn-secondary" type="button">Thermomix</button>
+          </div>
+        `;
+        const buttons = div.querySelectorAll("button");
+        buttons[0].addEventListener("click", () => searchMealGoogle(dish ? dish.name : meal));
+        buttons[1].addEventListener("click", () => searchMealChefkoch(dish ? dish.name : meal));
+        buttons[2].addEventListener("click", () => searchMealThermomix(dish ? dish.name : meal));
+        box.appendChild(div);
+      });
+    }
+
+    function renderStock() {
+      const box = document.getElementById("stockList");
+      box.innerHTML = "";
+
+      if (!stockItems.length) {
+        box.innerHTML = "<div class='subtle'>Noch nichts im Vorrat.</div>";
+        return;
+      }
+
+      stockItems.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "stock-row";
+
+        if (item.editing) {
+          row.innerHTML = `
+            <div></div>
+            <div>
+              <div class="row">
+                <input id="stockName_${item.id}" class="grow" type="text" value="${escapeHtml(item.name)}">
+                <input id="stockAmount_${item.id}" class="w120" type="text" value="${escapeHtml(item.amount || "")}">
+                <input id="stockUnit_${item.id}" class="w140" type="text" value="${escapeHtml(item.unit || "")}">
+              </div>
+              <div class="actions">
+                <button class="btn-primary btn-small" type="button">Speichern</button>
+                <button class="btn-secondary btn-small" type="button">Abbrechen</button>
+              </div>
+            </div>
+            <div></div>
+          `;
+          const buttons = row.querySelectorAll("button");
+          buttons[0].addEventListener("click", () => saveEditStock(item.id));
+          buttons[1].addEventListener("click", () => cancelEditStock(item.id));
+        } else {
+          const qty = [item.amount, item.unit].filter(Boolean).join(" ");
+          row.innerHTML = `
+            <div></div>
+            <div>
+              <div class="title">${escapeHtml(item.name)} <span class="pill">zuhause</span></div>
+              <div class="meta">${escapeHtml(qty || "ohne Menge")}</div>
+            </div>
+            <div class="actions">
+              <button class="btn-secondary btn-small" type="button">Bearbeiten</button>
+              <button class="btn-danger btn-small" type="button">Löschen</button>
+            </div>
+          `;
+          const buttons = row.querySelectorAll("button");
+          buttons[0].addEventListener("click", () => startEditStock(item.id));
+          buttons[1].addEventListener("click", () => deleteStockItem(item.id));
+        }
+
+        box.appendChild(row);
+      });
+    }
+
+    function renderShopping() {
+      const box = document.getElementById("shoppingList");
+      box.innerHTML = "";
+
+      const { autoItems, manualItems } = getShoppingData();
+      const combined = [...autoItems, ...manualItems];
+
+      if (!combined.length) {
+        box.innerHTML = "<div class='subtle'>Es fehlt gerade nichts.</div>";
+        return;
+      }
+
+      const grouped = {};
+      SHOPPING_AREAS.forEach(area => grouped[area] = []);
+      combined.forEach(item => {
+        const area = normalizeArea(item.area || "Sonstiges");
+        grouped[area].push(item);
+      });
+
+      SHOPPING_AREAS.forEach(area => {
+        const items = grouped[area];
+        if (!items.length) return;
+
+        const areaDiv = document.createElement("div");
+        areaDiv.className = "area-block";
+        areaDiv.innerHTML = `<div class="area-title">${escapeHtml(area)}</div>`;
+
+        items.forEach(item => {
+          const key = item.type === "manual" ? "manual_" + item.id : "auto_" + item.id;
+          const safe = safeId(item.id);
+          const row = document.createElement("div");
+          row.className = "shopping-row" + (item.fresh ? " fresh" : "") + (checkedItems[key] ? " done" : "");
+          row.style.marginTop = "8px";
+
+          if (item.type === "auto") {
+            const override = shoppingOverrides[item.id] || {};
+            const editing = !!override.editing;
+
+            if (editing) {
+              row.innerHTML = `
+                <input type="checkbox" ${checkedItems[key] ? "checked" : ""}>
+                <div>
+                  <div class="row">
+                    <input id="autoName_${safe}" class="grow" type="text" value="${escapeHtml(item.name)}">
+                    <input id="autoAmount_${safe}" class="w120" type="text" value="${escapeHtml(item.amount || "")}">
+                    <input id="autoUnit_${safe}" class="w140" type="text" value="${escapeHtml(item.unit || "")}">
+                    <select id="autoFresh_${safe}" class="w160">
+                      <option value="no" ${!item.fresh ? "selected" : ""}>nicht frisch</option>
+                      <option value="yes" ${item.fresh ? "selected" : ""}>frisch kaufen</option>
+                    </select>
+                    <select id="autoArea_${safe}" class="w220">
+                      ${SHOPPING_AREAS.map(a => `<option value="${escapeHtml(a)}" ${item.area === a ? "selected" : ""}>${escapeHtml(a)}</option>`).join("")}
+                    </select>
+                  </div>
+                  <div class="meta">Für: ${escapeHtml(item.dishes.join(", "))}</div>
+                  <div class="actions">
+                    <button class="btn-primary btn-small" type="button">Speichern</button>
+                    <button class="btn-secondary btn-small" type="button">Abbrechen</button>
+                  </div>
+                </div>
+                <div></div>
+              `;
+              const checkbox = row.querySelector("input[type='checkbox']");
+              const buttons = row.querySelectorAll("button");
+              checkbox.addEventListener("change", () => toggleChecked(key));
+              buttons[0].addEventListener("click", () => saveEditAuto(item.id));
+              buttons[1].addEventListener("click", () => cancelEditAuto(item.id));
+            } else {
+              const qty = [item.amount, item.unit].filter(Boolean).join(" ");
+              row.innerHTML = `
+                <input type="checkbox" ${checkedItems[key] ? "checked" : ""}>
+                <div>
+                  <div class="title">${escapeHtml(item.name)} ${item.fresh ? '<span class="pill">frisch kaufen</span>' : ''}</div>
+                  <div class="meta">Menge: ${escapeHtml(qty || "ohne Menge")} • für ${escapeHtml(item.dishes.join(", "))}</div>
+                </div>
+                <div class="actions">
+                  <button class="btn-secondary btn-small" type="button">Bearbeiten</button>
+                </div>
+              `;
+              const checkbox = row.querySelector("input[type='checkbox']");
+              const button = row.querySelector("button");
+              checkbox.addEventListener("change", () => toggleChecked(key));
+              button.addEventListener("click", () => startEditAuto(item.id));
+            }
+          } else {
+            if (item.editing) {
+              row.innerHTML = `
+                <input type="checkbox" ${checkedItems[key] ? "checked" : ""}>
+                <div>
+                  <div class="row">
+                    <input id="manualName_${item.id}" class="grow" type="text" value="${escapeHtml(item.name)}">
+                    <input id="manualAmount_${item.id}" class="w120" type="text" value="${escapeHtml(item.amount || "")}">
+                    <input id="manualUnit_${item.id}" class="w140" type="text" value="${escapeHtml(item.unit || "")}">
+                    <select id="manualFresh_${item.id}" class="w160">
+                      <option value="no" ${!item.fresh ? "selected" : ""}>nicht frisch</option>
+                      <option value="yes" ${item.fresh ? "selected" : ""}>frisch kaufen</option>
+                    </select>
+                    <select id="manualArea_${item.id}" class="w220">
+                      ${SHOPPING_AREAS.map(a => `<option value="${escapeHtml(a)}" ${item.area === a ? "selected" : ""}>${escapeHtml(a)}</option>`).join("")}
+                    </select>
+                  </div>
+                  <div class="actions">
+                    <button class="btn-primary btn-small" type="button">Speichern</button>
+                    <button class="btn-secondary btn-small" type="button">Abbrechen</button>
+                  </div>
+                </div>
+                <div></div>
+              `;
+              const checkbox = row.querySelector("input[type='checkbox']");
+              const buttons = row.querySelectorAll("button");
+              checkbox.addEventListener("change", () => toggleChecked(key));
+              buttons[0].addEventListener("click", () => saveEditManual(item.id));
+              buttons[1].addEventListener("click", () => cancelEditManual(item.id));
+            } else {
+              const qty = [item.amount, item.unit].filter(Boolean).join(" ");
+              row.innerHTML = `
+                <input type="checkbox" ${checkedItems[key] ? "checked" : ""}>
+                <div>
+                  <div class="title">${escapeHtml(item.name)} ${item.fresh ? '<span class="pill">frisch kaufen</span>' : ''}</div>
+                  <div class="meta">Menge: ${escapeHtml(qty || "ohne Menge")} • manuell hinzugefügt</div>
+                </div>
+                <div class="actions">
+                  <button class="btn-secondary btn-small" type="button">Bearbeiten</button>
+                  <button class="btn-danger btn-small" type="button">Löschen</button>
+                </div>
+              `;
+              const checkbox = row.querySelector("input[type='checkbox']");
+              const buttons = row.querySelectorAll("button");
+              checkbox.addEventListener("change", () => toggleChecked(key));
+              buttons[0].addEventListener("click", () => startEditManual(item.id));
+              buttons[1].addEventListener("click", () => deleteManualItem(item.id));
+            }
+          }
+
+          areaDiv.appendChild(row);
+        });
+
+        box.appendChild(areaDiv);
+      });
+    }
+
+    function renderPlannedMeals() {
+      const box = document.getElementById("plannedMeals");
+      box.innerHTML = "";
+
+      const meals = week.filter(Boolean);
+      if (!meals.length) {
+        box.innerHTML = "<li class='subtle'>Noch kein Plan vorhanden.</li>";
+        return;
+      }
+
+      meals.forEach(meal => {
+        const li = document.createElement("li");
+        li.textContent = meal;
+        box.appendChild(li);
+      });
+    }
+
+    function renderPrintContent() {
+      document.getElementById("printServings").textContent = `Portionen: ${servings}`;
+
+      const printWeek = document.getElementById("printWeek");
+      const printShopping = document.getElementById("printShopping");
+
+      printWeek.innerHTML = "";
+      printShopping.innerHTML = "";
+
+      DAYS.forEach((day, i) => {
+        const div = document.createElement("div");
+        div.textContent = `${day}: ${week[i] || "—"}`;
+        printWeek.appendChild(div);
+      });
+
+      const { autoItems, manualItems } = getShoppingData();
+      const combined = [...autoItems, ...manualItems];
+      const grouped = {};
+      SHOPPING_AREAS.forEach(area => grouped[area] = []);
+      combined.forEach(item => grouped[normalizeArea(item.area || "Sonstiges")].push(item));
+
+      SHOPPING_AREAS.forEach(area => {
+        if (!grouped[area].length) return;
+        const title = document.createElement("h3");
+        title.textContent = area;
+        printShopping.appendChild(title);
+
+        const ul = document.createElement("ul");
+        grouped[area].forEach(item => {
+          const li = document.createElement("li");
+          const qty = [item.amount, item.unit].filter(Boolean).join(" ");
+          li.textContent = `${item.name}${qty ? " – " + qty : ""}${item.fresh ? " (frisch kaufen)" : ""}`;
+          ul.appendChild(li);
+        });
+        printShopping.appendChild(ul);
+      });
+    }
+
+    function loadExamples() {
+      const examples = [
+        {
+          name: "Spaghetti Bolognese",
+          category: "Pasta",
+          ingredients: [
+            {name:"Spaghetti", amount:"500", unit:"g", fresh:false, area:"Trockenwaren"},
+            {name:"Hackfleisch", amount:"500", unit:"g", fresh:true, area:"Fleisch & Fisch"},
+            {name:"Tomatensoße", amount:"2", unit:"Gläser", fresh:false, area:"Trockenwaren"},
+            {name:"Zwiebeln", amount:"2", unit:"Stück", fresh:true, area:"Obst & Gemüse"}
+          ],
+          instructions: "1. Zwiebeln schneiden.\n2. Hackfleisch anbraten.\n3. Tomatensoße dazugeben.\n4. Spaghetti kochen und servieren.",
+          hint: "Hackfleisch rechtzeitig aus dem Kühlschrank nehmen oder auftauen.",
+          leftovers: true,
+          image: "",
+          favorite: true
+        },
+        {
+          name: "Salat mit Feta",
+          category: "Salat",
+          ingredients: [
+            {name:"Salat", amount:"1", unit:"Kopf", fresh:true, area:"Obst & Gemüse"},
+            {name:"Feta", amount:"1", unit:"Packung", fresh:true, area:"Kühlregal"},
+            {name:"Tomaten", amount:"4", unit:"Stück", fresh:true, area:"Obst & Gemüse"},
+            {name:"Gurke", amount:"1", unit:"Stück", fresh:true, area:"Obst & Gemüse"}
+          ],
+          instructions: "1. Gemüse waschen.\n2. Alles klein schneiden.\n3. Feta darüber geben.\n4. Dressing dazu.",
+          hint: "Am besten frisch am selben Tag machen.",
+          leftovers: false,
+          image: "",
+          favorite: false
+        },
+        {
+          name: "Wraps",
+          category: "Schnell",
+          ingredients: [
+            {name:"Wraps", amount:"1", unit:"Packung", fresh:false, area:"Trockenwaren"},
+            {name:"Hähnchen", amount:"400", unit:"g", fresh:true, area:"Fleisch & Fisch"},
+            {name:"Salat", amount:"1", unit:"Kopf", fresh:true, area:"Obst & Gemüse"},
+            {name:"Soße", amount:"1", unit:"Flasche", fresh:false, area:"Trockenwaren"}
+          ],
+          instructions: "1. Hähnchen anbraten.\n2. Salat vorbereiten.\n3. Wraps füllen.\n4. Mit Soße servieren.",
+          hint: "Hähnchen ggf. am Vorabend auftauen.",
+          leftovers: true,
+          image: "",
+          favorite: false
+        }
+      ];
+
+      examples.forEach(ex => {
+        if (!dishes.some(d => d.name.toLowerCase() === ex.name.toLowerCase())) {
+          dishes.push({
+            id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+            ...ex,
+            createdAt: Date.now(),
+            expanded: false
+          });
+        }
+      });
+
+      queueSave();
+      render();
+    }
+
+    function render() {
+      document.getElementById("servingsSelect").value = String(servings);
+      renderDishes();
+      renderWeek();
+      renderRecipeLinks();
+      renderStock();
+      renderShopping();
+      renderPlannedMeals();
+      renderPrintContent();
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadData();
+
+      document.getElementById("addDishBtn").addEventListener("click", addDish);
+      document.getElementById("cancelDishEditBtn").addEventListener("click", clearDishInputs);
+
+      document.getElementById("addStockBtn").addEventListener("click", addStockItem);
+      document.getElementById("addManualBtn").addEventListener("click", addManualItem);
+
+      document.getElementById("pickTodayBtn").addEventListener("click", pickToday);
+      document.getElementById("printBtn").addEventListener("click", printPlan);
+      document.getElementById("loadExamplesBtn").addEventListener("click", loadExamples);
+
+      document.getElementById("createWeekBtn").addEventListener("click", createWeek);
+      document.getElementById("createWeekBtnInside").addEventListener("click", createWeek);
+      document.getElementById("clearWeekBtn").addEventListener("click", clearWeek);
+
+      document.getElementById("exportBtn").addEventListener("click", exportData);
+      document.getElementById("importBtn").addEventListener("click", () => {
+        document.getElementById("importFile").click();
+      });
+
+      document.getElementById("importFile").addEventListener("change", function(e) {
+        importDataFromFile(e.target.files[0]);
+        e.target.value = "";
+      });
+
+      document.getElementById("servingsSelect").addEventListener("change", function() {
+        updateServings(this.value);
+      });
+
+      document.getElementById("searchGoogleBtn").addEventListener("click", searchGeneralGoogle);
+      document.getElementById("searchChefkochBtn").addEventListener("click", searchGeneralChefkoch);
+      document.getElementById("searchThermomixBtn").addEventListener("click", searchGeneralThermomix);
+
+      document.getElementById("recipeSearchInput").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          searchGeneralGoogle();
+        }
+      });
+
+      document.getElementById("recipeFilterSearch").addEventListener("input", renderDishes);
+      document.getElementById("recipeViewFilter").addEventListener("change", renderDishes);
+      document.getElementById("recipeSort").addEventListener("change", renderDishes);
+
+      render();
+      subscribeToState();
+    });
+  </script>
+</body>
+</html>
     function searchMealChefkoch(name) {
       window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(name) + "/Rezepte.html", "_blank");
     }
