@@ -65,6 +65,7 @@
       <button onclick="smartWeek()">🧠 Intelligenter Wochenplan</button>
       <button onclick="randomWeek()">🎲 Zufallsplan</button>
       <button class="soft" onclick="favoriteWeek()">⭐ Favoriten würfeln</button>
+      <button class="soft" onclick="mealPrepPlan()">🥘 Meal-Prep</button>
       <button class="soft" onclick="showTodayCooking()">🍳 Heute kochen</button>
       <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
       <button class="soft" onclick="loadExamples()">Beispiele laden</button>
@@ -82,6 +83,7 @@
   </div>
 
   <div id="todayCard" class="card today-card" style="display:none"></div>
+  <div id="missingCard" class="card" style="display:none"></div>
 
   <div class="grid2">
     <section class="card">
@@ -119,6 +121,7 @@ Hackfleisch|500|g|Fleisch & Fisch|frisch
 Tomatensoße|2|Gläser|Trockenwaren|
 Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
+      <input id="dishCategory" placeholder="Kategorie z.B. Pasta, Ofen, Pfanne, Salat">
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
@@ -593,6 +596,7 @@ window.setPersons = async function(v){
 window.addDish = async function(){
   const name = normalize(document.getElementById("dishName").value);
   const hint = normalize(document.getElementById("dishHint").value);
+  let category = normalize(document.getElementById("dishCategory").value);
   const imageUrl = normalize(document.getElementById("dishImageUrl").value);
   const favorite = document.getElementById("dishFavorite").checked;
   const ingredients = parseIngredients(document.getElementById("dishIngredients").value);
@@ -625,6 +629,7 @@ window.addDish = async function(){
     document.getElementById("dishName").value = "";
     document.getElementById("dishIngredients").value = "";
     document.getElementById("dishHint").value = "";
+    document.getElementById("dishCategory").value = "";
     document.getElementById("dishImageUrl").value = "";
     document.getElementById("dishImageFile").value = "";
     document.getElementById("dishFavorite").checked = false;
@@ -650,6 +655,7 @@ window.editDish = function(i){
   document.getElementById("dishName").value = dish.name || "";
   document.getElementById("dishIngredients").value = ingredientsToText(dish.ingredients || []);
   document.getElementById("dishHint").value = dish.hint || "";
+  document.getElementById("dishCategory").value = dish.category || "";
   document.getElementById("dishImageUrl").value = dish.image && !String(dish.image).startsWith("data:") ? dish.image : "";
   document.getElementById("dishImageFile").value = "";
   document.getElementById("dishFavorite").checked = !!dish.favorite;
@@ -664,6 +670,7 @@ window.cancelEdit = function(){
   document.getElementById("dishName").value = "";
   document.getElementById("dishIngredients").value = "";
   document.getElementById("dishHint").value = "";
+    document.getElementById("dishCategory").value = "";
   document.getElementById("dishImageUrl").value = "";
   document.getElementById("dishImageFile").value = "";
   document.getElementById("dishFavorite").checked = false;
@@ -1019,6 +1026,7 @@ function renderDishes(){
     const div = document.createElement("div");
     div.className = "box";
     div.innerHTML = `<div class="title">${escapeHtml(d.name)} ${d.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
+      ${d.category ? `<div class="meta">Kategorie: ${escapeHtml(d.category)}</div>` : ""}
       ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
       <div class="meta">${escapeHtml(preview)}</div>
       ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
@@ -1026,6 +1034,7 @@ function renderDishes(){
       <div class="actions">
         <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
         <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
+        <button class="soft small" onclick="showMissingForDish(${i})">Was fehlt?</button>
         <button class="soft small" onclick="duplicateDish(${i})">Duplizieren</button>
         <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
       </div>`;
@@ -1265,6 +1274,42 @@ window.importRecipe = async function(){
   }catch(e){
     status.textContent = "Import fehlgeschlagen.";
   }
+};
+
+
+window.mealPrepPlan = async function(){
+  if(!state.dishes.length) return;
+  const favs = state.dishes.filter(d => d.favorite);
+  const pool = favs.length ? favs : state.dishes;
+  const first = pool[Math.floor(Math.random()*pool.length)];
+  const second = pool[Math.floor(Math.random()*pool.length)];
+  state.week = [first.name, first.name, second.name, second.name, "", "", ""];
+  await save();
+  render();
+};
+
+function getOwnedIngredientNames(){
+  return [
+    ...(state.stock || []).map(x => ingredientToken(x.name)),
+    ...(state.freezer || []).map(x => ingredientToken(x.name))
+  ];
+}
+
+window.showMissingForDish = function(i){
+  const card = document.getElementById("missingCard");
+  const dish = state.dishes[i];
+  if(!dish){ card.style.display = "none"; return; }
+  const owned = getOwnedIngredientNames();
+  const missing = (dish.ingredients || []).filter(x => !owned.includes(ingredientToken(x.name)));
+  card.style.display = "block";
+  card.innerHTML = `
+    <h2 class="section-title">🛒 Was fehlt für ${escapeHtml(dish.name)}?</h2>
+    ${missing.length
+      ? `<div class="list">${missing.map(x => `<div class="box"><div class="title">${escapeHtml(x.name)}</div><div class="meta">${escapeHtml([scaleAmount(x.amount), x.unit].filter(Boolean).join(" "))}</div></div>`).join("")}</div>`
+      : `<div class="hint">Alles da oder im Vorrat/Gefrierschrank vorhanden ✅</div>`
+    }
+  `;
+  card.scrollIntoView({behavior:"smooth", block:"start"});
 };
 
 render();
