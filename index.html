@@ -160,9 +160,18 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
     </section>
 
     <section class="card">
-      <h2>Was kann ich kochen?</h2>
-      <div class="small-note">Vorschläge auf Basis von Vorrat + Gefrierliste. Je mehr Zutaten vorhanden sind, desto höher steht das Gericht.</div>
-      <div id="cookSuggestions" class="list" style="margin-top:10px"></div>
+      <h2>Was kann ich aus folgenden Zutaten kochen?</h2>
+      <div class="small-note">Trage Reste oder Zutaten ein, die du da hast. Dann bekommst du passende Ideen aus deinen gespeicherten Rezepten.</div>
+      <textarea id="ingredientIdeaInput" placeholder="z.B.
+Tomaten
+Zwiebeln
+Nudeln
+Hackfleisch"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button onclick="showIngredientIdeas()">Ideen anzeigen</button>
+        <button class="soft" onclick="clearIngredientIdeas()">Leeren</button>
+      </div>
+      <div id="ingredientIdeas" class="list" style="margin-top:10px"></div>
     </section>
   </div>
 
@@ -201,7 +210,7 @@ const ref = doc(db, "apps", "familie-hanst-v5");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
 
-window.state = {
+let state = window.state = {
   dishes:[],
   week:["","","","","","",""],
   servings:2,
@@ -226,7 +235,7 @@ function scaleAmount(amount){
   const s = Math.round((n * (state.servings / 2)) * 100) / 100;
   return String(s).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1");
 }
-const save = () => !applying ? setDoc(ref, window.state) : undefined;
+const save = () => !applying ? setDoc(ref, state) : undefined;
 const escapeHtml = t => String(t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const jsEscape = t => String(t || "").replace(/'/g, "\\'");
 function parseIngredients(text){
@@ -249,11 +258,7 @@ const ingredientLabel = i => {
 const ingredientKey = i => `${i.name.toLowerCase()}|${(i.unit||"").toLowerCase()}|${(i.area||"Sonstiges").toLowerCase()}`;
 const stockMatch = item => state.stock.find(s => s.name.toLowerCase() === item.name.toLowerCase() && (s.unit||"").toLowerCase() === (item.unit||"").toLowerCase());
 
-function allAvailableNames(){
-  const stockNames = (state.stock || []).map(s => s.name.toLowerCase());
-  const freezeNames = (state.freeze || []).map(f => String(f).toLowerCase());
-  return new Set([...stockNames, ...freezeNames]);
-}
+
 
 window.setPersons = function(v){ state.servings = parseInt(v,10) || 2; save(); render(); };
 
@@ -363,9 +368,9 @@ window.addFreeze = function(){
   if(!v) return;
   state.freeze.push(v);
   document.getElementById("freezeItem").value = "";
-  save(); renderFreeze(); renderCookSuggestions();
+  save(); renderFreeze();
 };
-window.deleteFreeze = function(i){ state.freeze.splice(i,1); save(); renderFreeze(); renderCookSuggestions(); };
+window.deleteFreeze = function(i){ state.freeze.splice(i,1); save(); renderFreeze(); };
 
 window.addIdea = function(){
   const v = normalize(document.getElementById("ideaItem").value);
@@ -385,9 +390,9 @@ window.addStock = function(){
   document.getElementById("stockName").value = "";
   document.getElementById("stockAmount").value = "";
   document.getElementById("stockUnit").value = "";
-  save(); renderStock(); renderShopping(); renderCookSuggestions();
+  save(); renderStock(); renderShopping();
 };
-window.deleteStock = function(i){ state.stock.splice(i,1); save(); renderStock(); renderShopping(); renderCookSuggestions(); };
+window.deleteStock = function(i){ state.stock.splice(i,1); save(); renderStock(); renderShopping(); };
 
 window.addManualShopping = function(){
   const name = normalize(document.getElementById("shopName").value);
@@ -606,30 +611,49 @@ function renderPlanned(){
   planned.forEach(meal => { const li = document.createElement("li"); li.textContent = meal; box.appendChild(li); });
 }
 
-function renderCookSuggestions(){
-  const box = document.getElementById("cookSuggestions");
+function showIngredientIdeas(){
+  const box = document.getElementById("ingredientIdeas");
+  const raw = document.getElementById("ingredientIdeaInput").value;
+  const entered = raw.split("
+").map(x => normalize(x).toLowerCase()).filter(Boolean);
+
   box.innerHTML = "";
+  if(!entered.length){
+    box.innerHTML = "<div class='empty'>Bitte zuerst Zutaten eingeben.</div>";
+    return;
+  }
   if(!state.dishes.length){
     box.innerHTML = "<div class='empty'>Noch keine Gerichte gespeichert.</div>";
     return;
   }
-  const available = allAvailableNames();
-  const ranked = state.dishes.map(d => {
-    const ings = d.ingredients || [];
-    const total = ings.length || 1;
-    const matched = ings.filter(i => available.has(i.name.toLowerCase())).length;
-    return { dish:d, matched, total, score: matched / total };
-  }).sort((a,b) => b.score - a.score || b.matched - a.matched);
 
-  ranked.slice(0,5).forEach(item => {
-    const missing = (item.dish.ingredients || []).filter(i => !available.has(i.name.toLowerCase())).map(i => i.name);
+  const ranked = state.dishes.map(d => {
+    const ingredients = (d.ingredients || []).map(i => i.name.toLowerCase());
+    const matched = ingredients.filter(name => entered.includes(name)).length;
+    const total = ingredients.length || 1;
+    const missing = (d.ingredients || []).filter(i => !entered.includes(i.name.toLowerCase())).map(i => i.name);
+    return {dish:d, matched, total, missing, score: matched / total};
+  }).filter(x => x.matched > 0)
+    .sort((a,b) => b.matched - a.matched || b.score - a.score || a.missing.length - b.missing.length);
+
+  if(!ranked.length){
+    box.innerHTML = "<div class='empty'>Dazu habe ich in deinen gespeicherten Rezepten gerade keine passende Idee gefunden.</div>";
+    return;
+  }
+
+  ranked.slice(0,8).forEach(item => {
     const div = document.createElement("div");
     div.className = "recipehint";
     div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)} ${item.dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
-      <div class="meta">Vorhanden: ${item.matched} / ${item.total}</div>
-      ${missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(missing.join(", "))}</div>` : `<div class="hint">Alles da oder fast alles da ✅</div>`}`;
+      <div class="meta">Passende Zutaten: ${item.matched} von ${item.total}</div>
+      ${item.missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(item.missing.join(", "))}</div>` : `<div class="hint">Das Rezept passt komplett zu deinen eingegebenen Zutaten ✅</div>`}
+      ${item.dish.hint ? `<div class="hint">💡 ${escapeHtml(item.dish.hint)}</div>` : ""}`;
     box.appendChild(div);
   });
+}
+function clearIngredientIdeas(){
+  document.getElementById("ingredientIdeaInput").value = "";
+  document.getElementById("ingredientIdeas").innerHTML = "";
 }
 
 function render(){
@@ -641,7 +665,6 @@ function render(){
   renderIdeas();
   renderStock();
   renderPlanned();
-  renderCookSuggestions();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -657,7 +680,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     applying = true;
     const data = snap.data();
-    window.state = {
+    state = window.state = {
       dishes: Array.isArray(data.dishes) ? data.dishes : [],
       week: Array.isArray(data.week) && data.week.length === 7 ? data.week : ["","","","","","",""],
       servings: data.servings || 2,
