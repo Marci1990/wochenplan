@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💛 Familie Hanst Wochenplan V12</title>
+  <title>💛 Familie Hanst Wochenplan V13</title>
   <style>
     :root{
       --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
@@ -28,6 +28,7 @@
     button:hover{background:var(--primary-dark)}
     button.soft{background:var(--secondary);color:#28324a}
     button.danger{background:var(--danger);color:var(--danger-text)}
+    button.success{background:var(--success);color:var(--success-text)}
     button.small{padding:6px 10px;font-size:13px}
     .grow{flex:1;min-width:180px}.w110{width:110px}.w120{width:120px}
     .list{display:flex;flex-direction:column;gap:10px}
@@ -44,16 +45,16 @@
     .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
     .section-title{margin-bottom:8px}
-    .tag{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#f7f7fb;border:1px solid var(--border);margin-right:6px;margin-top:6px}
     .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
   </style>
 </head>
 <body>
 <div class="wrap">
   <section class="hero">
     <h1>💛 Familie Hanst Wochenplan</h1>
-    <p>Firebase Sync, bessere Rezeptideen, Vorrat + Gefrierschrank in den Vorschlägen und schnelle Einkaufsliste zum Direktbearbeiten.</p>
+    <p>V13 mit Resteverwertung, Heute-kochen-Ansicht, Favoriten-Würfeln, Backup/Restore und besserer Zutaten-Erkennung.</p>
   </section>
 
   <div id="status" class="status">Verbinde mit Firebase…</div>
@@ -62,14 +63,46 @@
     <div class="row">
       <button onclick="smartWeek()">🧠 Intelligenter Wochenplan</button>
       <button onclick="randomWeek()">🎲 Zufallsplan</button>
+      <button class="soft" onclick="favoriteWeek()">⭐ Favoriten würfeln</button>
+      <button class="soft" onclick="showTodayCooking()">🍳 Heute kochen</button>
       <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
       <button class="soft" onclick="loadExamples()">Beispiele laden</button>
+      <button class="soft" onclick="downloadBackup()">Backup speichern</button>
+      <label class="soft" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;cursor:pointer;">
+        Backup laden
+        <input id="restoreFile" type="file" accept="application/json" style="display:none" onchange="restoreBackup(event)">
+      </label>
       <label style="display:flex;align-items:center;gap:8px;font-weight:700;">Personen
         <select id="servingsSelect" style="width:auto;" onchange="setPersons(this.value)">
           <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
         </select>
       </label>
     </div>
+  </div>
+
+  <div id="todayCard" class="card today-card" style="display:none"></div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2 class="section-title">Resteverwertung / Vorschläge</h2>
+      <div class="small-note">Nutzt Vorrat, Gefrierschrank und deine gespeicherten Rezepte.</div>
+      <div id="leftoverIdeas" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Was kann ich heute aus folgenden Zutaten kochen?</h2>
+      <div class="small-note">Nutzt eingegebene Zutaten + Vorrat + Gefrierschrank. Zeigt zuerst passende gespeicherte Gerichte und dann bessere KI-Ideen.</div>
+      <textarea id="ideaInput" placeholder="z.B.
+Tomaten
+Nudeln
+Zwiebeln
+Hackfleisch"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button onclick="findIdeas()">Vorschläge anzeigen</button>
+        <button class="soft" onclick="clearIdeas()">Leeren</button>
+      </div>
+      <div id="ideaResults" class="list"></div>
+    </section>
   </div>
 
   <div class="grid">
@@ -91,7 +124,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
         <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
       </div>
-      <div class="small-note">Echte externe KI wie ChatGPT oder andere Dienste braucht einen eigenen API-Schlüssel. Diese Version nutzt deine gespeicherten Rezepte plus intelligente lokale Vorschläge.</div>
+      <div class="small-note">Externe KI wie ChatGPT in der App braucht einen eigenen API-Schlüssel. Diese Version funktioniert direkt ohne Schlüssel und macht gute lokale Vorschläge.</div>
     </section>
 
     <section class="card">
@@ -109,7 +142,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
     <section class="card">
       <h2 class="section-title">Einkaufsliste</h2>
-      <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach kannst du jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
+      <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
       <div class="row" style="margin-top:12px">
         <input id="shopQuick" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
         <button onclick="quickAddShopButton()">Schnell hinzufügen</button>
@@ -165,21 +198,6 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
   </div>
 
   <div class="card">
-    <h2 class="section-title">Was kann ich heute aus folgenden Zutaten kochen?</h2>
-    <div class="small-note">Nutzt eingegebene Zutaten + Vorrat + Gefrierschrank. Zeigt zuerst passende gespeicherte Gerichte und dann bessere KI-Ideen direkt aus deinen Zutaten.</div>
-    <textarea id="ideaInput" placeholder="z.B.
-Tomaten
-Nudeln
-Zwiebeln
-Hackfleisch"></textarea>
-    <div class="row" style="margin-top:10px">
-      <button onclick="findIdeas()">Vorschläge anzeigen</button>
-      <button class="soft" onclick="clearIdeas()">Leeren</button>
-    </div>
-    <div id="ideaResults" class="list"></div>
-  </div>
-
-  <div class="card">
     <h2 class="section-title">Rezeptsuche</h2>
     <div class="row">
       <input id="searchName" class="grow" placeholder="z.B. Lasagne">
@@ -205,7 +223,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const ref = doc(db, "apps", "familie-hanst-v12");
+const ref = doc(db, "apps", "familie-hanst-v13");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
 const AREA_TO_SUPERMARKET = {
@@ -236,6 +254,23 @@ const escapeHtml = t => String(t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;
 const parseNumber = v => parseFloat(String(v).replace(",", "."));
 const isNumeric = v => !Number.isNaN(parseNumber(v));
 const updateStatus = t => document.getElementById("status").textContent = t;
+
+function ingredientToken(value){
+  return normalize(String(value || ""))
+    .toLowerCase()
+    .replace(/[.,;:!?]/g, "")
+    .replace(/\b(tomaten|tomate)\b/g, "tomate")
+    .replace(/\b(zwiebeln|zwiebel)\b/g, "zwiebel")
+    .replace(/\b(eier|ei)\b/g, "ei")
+    .replace(/\b(nudeln|nudel)\b/g, "nudel")
+    .replace(/\b(spaghetti)\b/g, "nudel")
+    .replace(/\b(kartoffeln|kartoffel)\b/g, "kartoffel")
+    .replace(/\b(paprika)\b/g, "paprika")
+    .replace(/\b(passierte tomaten|tomatensoße|tomatensosse)\b/g, "tomate")
+    .replace(/\b(bohnen)\b/g, "bohne")
+    .replace(/\b(erbsen)\b/g, "erbse")
+    .trim();
+}
 
 function save(){ return setDoc(ref, state); }
 
@@ -271,7 +306,7 @@ function ingredientLabel(i){
 
 function stockMatch(item){
   return state.stock.find(s =>
-    s.name.toLowerCase() === item.name.toLowerCase() &&
+    ingredientToken(s.name) === ingredientToken(item.name) &&
     (s.unit || "").toLowerCase() === (item.unit || "").toLowerCase()
   );
 }
@@ -279,7 +314,7 @@ function stockMatch(item){
 function uniqueByNameUnit(items){
   const map = new Map();
   items.forEach(item => {
-    const key = (item.name || "").toLowerCase() + "|" + (item.unit || "").toLowerCase();
+    const key = ingredientToken(item.name || "") + "|" + (item.unit || "").toLowerCase();
     if(!map.has(key)){
       map.set(key, {...item});
     } else {
@@ -295,22 +330,22 @@ function uniqueByNameUnit(items){
 }
 
 function aiRecipeIdeasFromIngredients(ingredients){
-  const set = new Set(ingredients.map(x => x.toLowerCase()));
+  const set = new Set(ingredients.map(ingredientToken));
   const ideas = [];
-  const hasAny = (...items) => items.some(i => set.has(i));
-  const hasAll = (...items) => items.every(i => set.has(i));
+  const hasAny = (...items) => items.some(i => set.has(ingredientToken(i)));
+  const hasAll = (...items) => items.every(i => set.has(ingredientToken(i)));
 
-  if(hasAll("eier","käse")) ideas.push({name:"Käse-Omelette", why:"Eier und Käse ergeben direkt ein schnelles warmes Gericht."});
-  if(hasAll("eier","tomaten")) ideas.push({name:"Tomaten-Ei-Pfanne", why:"Tomaten und Eier passen super zusammen und gehen schnell."});
-  if(hasAny("nudeln","spaghetti") && hasAny("tomaten","tomatensoße","passierte tomaten")) ideas.push({name:"Tomatenpasta", why:"Nudeln und Tomaten sind die perfekte Basis für ein schnelles Gericht."});
-  if(hasAny("nudeln","spaghetti") && hasAny("hackfleisch")) ideas.push({name:"Hackfleisch-Nudeln", why:"Hackfleisch bringt direkt eine sättigende Basis für Pasta."});
-  if(hasAny("reis") && hasAny("gemüse","paprika","mais","erbsen","zwiebeln")) ideas.push({name:"Bunte Reispfanne", why:"Reis lässt sich sehr gut mit Gemüse und Resten kombinieren."});
-  if(hasAny("kartoffeln") && hasAny("zwiebeln","eier","käse")) ideas.push({name:"Kartoffelpfanne", why:"Kartoffeln, Zwiebeln, Ei oder Käse passen sehr gut zusammen."});
+  if(hasAll("ei","käse")) ideas.push({name:"Käse-Omelette", why:"Ei und Käse ergeben direkt ein schnelles warmes Gericht."});
+  if(hasAll("ei","tomate")) ideas.push({name:"Tomaten-Ei-Pfanne", why:"Tomate und Ei passen super zusammen und gehen schnell."});
+  if(hasAny("nudel") && hasAny("tomate")) ideas.push({name:"Tomatenpasta", why:"Nudeln und Tomaten sind die perfekte Basis für ein schnelles Gericht."});
+  if(hasAny("nudel") && hasAny("hackfleisch")) ideas.push({name:"Hackfleisch-Nudeln", why:"Hackfleisch bringt direkt eine sättigende Basis für Pasta."});
+  if(hasAny("reis") && hasAny("gemüse","paprika","mais","erbse","zwiebel","hähnchen")) ideas.push({name:"Bunte Reispfanne", why:"Reis lässt sich sehr gut mit Gemüse und Resten kombinieren."});
+  if(hasAny("kartoffel") && hasAny("zwiebel","ei","käse")) ideas.push({name:"Kartoffelpfanne", why:"Kartoffeln, Zwiebeln, Ei oder Käse passen sehr gut zusammen."});
   if(hasAny("brot","toast") && hasAny("käse","schinken","salami")) ideas.push({name:"Überbackene Brote", why:"Aus Brot oder Toast mit Käse und Belag wird schnell etwas Warmes."});
-  if(hasAny("wraps","tortilla") && hasAny("käse","salat","hähnchen","hackfleisch","tomaten")) ideas.push({name:"Gefüllte Wraps", why:"Die Zutaten passen gut für schnelle Wraps oder Quesadillas."});
-  if(hasAny("salat","gurke","tomaten","feta","mozzarella")) ideas.push({name:"Großer Salat-Teller", why:"Frische Zutaten passen gut als leichter Salat oder Beilage."});
-  if(hasAll("mehl","milch","eier")) ideas.push({name:"Pfannkuchen", why:"Mehl, Milch und Eier sind direkt die Basis dafür."});
-  if(hasAny("bohnen","mais","tomaten") && hasAny("reis","wraps")) ideas.push({name:"Mexikanische Pfanne", why:"Bohnen, Mais und Tomaten passen gut für eine würzige Resteküche."});
+  if(hasAny("wrap","tortilla") && hasAny("käse","salat","hähnchen","hackfleisch","tomate")) ideas.push({name:"Gefüllte Wraps", why:"Die Zutaten passen gut für schnelle Wraps oder Quesadillas."});
+  if(hasAny("salat","gurke","tomate","feta","mozzarella")) ideas.push({name:"Großer Salat-Teller", why:"Frische Zutaten passen gut als leichter Salat oder Beilage."});
+  if(hasAll("mehl","milch","ei")) ideas.push({name:"Pfannkuchen", why:"Mehl, Milch und Eier sind direkt die Basis dafür."});
+  if(hasAny("bohne","mais","tomate") && hasAny("reis","wrap")) ideas.push({name:"Mexikanische Pfanne", why:"Bohnen, Mais und Tomaten passen gut für eine würzige Resteküche."});
 
   if(!ideas.length){
     ideas.push({name:"Restepfanne", why:"Mit deinen Zutaten passt wahrscheinlich eine Pfanne mit Gewürzen und Käse."});
@@ -359,7 +394,7 @@ function smartWeekPool(){
     let candidate = null;
     while(tries < 20){
       const maybe = pool[Math.floor(Math.random()*pool.length)];
-      const token = maybe.name.toLowerCase().split(" ")[0];
+      const token = ingredientToken(maybe.name.split(" ")[0]);
       if(!lastTokens.includes(token) || pool.length < 3){
         candidate = maybe;
         break;
@@ -368,7 +403,7 @@ function smartWeekPool(){
     }
     candidate = candidate || pool[Math.floor(Math.random()*pool.length)];
     result.push(candidate.name);
-    lastTokens.push(candidate.name.toLowerCase().split(" ")[0]);
+    lastTokens.push(ingredientToken(candidate.name.split(" ")[0]));
     if(lastTokens.length > 2) lastTokens.shift();
   }
   return result.length === 7 ? result : DAYS.map((_,i) => result[i] || "");
@@ -383,9 +418,120 @@ function getAvailableIngredientInput(){
 
   const stock = (state.stock || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
   const freezer = (state.freezer || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
-  const all = [...new Set([...entered, ...stock, ...freezer])];
-  return all;
+  return [...new Set([...entered, ...stock, ...freezer])];
 }
+
+function getTodayIndex(){
+  const day = new Date().getDay(); // 0 Sun
+  return day === 0 ? 6 : day - 1;
+}
+
+function renderTodayCard(){
+  const card = document.getElementById("todayCard");
+  const idx = getTodayIndex();
+  const dayName = DAYS[idx];
+  const planned = state.week[idx];
+  const dish = state.dishes.find(d => d.name === planned);
+
+  if(!planned || !dish){
+    card.style.display = "none";
+    card.innerHTML = "";
+    return;
+  }
+
+  const ingredients = (dish.ingredients || []).map(ingredientLabel).join(", ");
+  card.style.display = "block";
+  card.innerHTML = `<h2 class="section-title">🍳 Heute kochen: ${escapeHtml(dayName)}</h2>
+    <div class="title">${escapeHtml(dish.name)} ${dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
+    ${dish.hint ? `<div class="hint">${escapeHtml(dish.hint)}</div>` : ""}
+    <div class="meta">${escapeHtml(ingredients)}</div>
+    ${dish.image ? `<img class="recipe-image" src="${dish.image}" alt="Rezeptbild">` : ""}
+  `;
+}
+
+window.showTodayCooking = function(){
+  renderTodayCard();
+  const card = document.getElementById("todayCard");
+  if(card.style.display === "none"){
+    alert("Für heute ist noch kein Gericht im Wochenplan eingetragen.");
+    return;
+  }
+  card.scrollIntoView({behavior:"smooth", block:"start"});
+};
+
+function renderLeftoverIdeas(){
+  const box = document.getElementById("leftoverIdeas");
+  box.innerHTML = "";
+
+  const available = [...new Set([
+    ...(state.stock || []).map(x => ingredientToken(x.name)),
+    ...(state.freezer || []).map(x => ingredientToken(x.name))
+  ])].filter(Boolean);
+
+  if(!available.length){
+    box.innerHTML = '<div class="empty">Trage zuerst etwas in Vorrat oder Gefrierschrank ein.</div>';
+    return;
+  }
+
+  const matches = state.dishes.map(d => {
+    const score = (d.ingredients || []).filter(i => available.includes(ingredientToken(i.name))).length;
+    const total = (d.ingredients || []).length || 1;
+    return {dish:d, score, total};
+  }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
+
+  if(matches.length){
+    matches.slice(0,5).forEach(item => {
+      const div = document.createElement("div");
+      div.className = "recipehint";
+      div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)}</div><div class="meta">${item.score} von ${item.total} Zutaten passen aus Vorrat / Gefrierschrank.</div>`;
+      box.appendChild(div);
+    });
+  } else {
+    const ideas = aiRecipeIdeasFromIngredients(available);
+    ideas.forEach(idea => {
+      const div = document.createElement("div");
+      div.className = "recipehint";
+      div.innerHTML = `<div class="title">${escapeHtml(idea.name)}</div><div class="meta">${escapeHtml(idea.why)}</div>`;
+      box.appendChild(div);
+    });
+  }
+}
+
+window.downloadBackup = function(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "familie-hanst-backup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+window.restoreBackup = function(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      state = {
+        dishes: Array.isArray(data.dishes) ? data.dishes : [],
+        week: Array.isArray(data.week) && data.week.length === 7 ? data.week : ["","","","","","",""],
+        servings: data.servings || 2,
+        shopping: Array.isArray(data.shopping) ? data.shopping : [],
+        stock: Array.isArray(data.stock) ? data.stock : [],
+        freezer: Array.isArray(data.freezer) ? data.freezer : [],
+        shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
+        editIndex: null
+      };
+      await save();
+      render();
+    } catch(err){
+      alert("Backup konnte nicht geladen werden.");
+    }
+  };
+  reader.readAsText(file);
+};
 
 window.setPersons = async function(v){
   state.servings = parseInt(v, 10) || 2;
@@ -484,6 +630,17 @@ window.randomWeek = async function(){
   render();
 };
 
+window.favoriteWeek = async function(){
+  const favs = state.dishes.filter(d => d.favorite);
+  if(!favs.length){
+    alert("Noch keine Favoriten gesetzt.");
+    return;
+  }
+  state.week = DAYS.map(() => favs[Math.floor(Math.random()*favs.length)].name);
+  await save();
+  render();
+};
+
 window.smartWeek = async function(){
   if(!state.dishes.length) return;
   state.week = smartWeekPool();
@@ -499,6 +656,7 @@ window.rollDay = async function(i){
   await save();
   renderWeek();
   renderShop();
+  renderTodayCard();
 };
 
 window.clearWeek = async function(){
@@ -512,6 +670,7 @@ window.updateDay = async function(i, val){
   await save();
   renderWeek();
   renderShop();
+  renderTodayCard();
 };
 
 window.quickAddShop = async function(e){
@@ -595,6 +754,7 @@ window.addStock = async function(){
   await save();
   renderStock();
   renderShop();
+  renderLeftoverIdeas();
 };
 
 window.editStock = async function(id){
@@ -612,6 +772,7 @@ window.editStock = async function(id){
   await save();
   renderStock();
   renderShop();
+  renderLeftoverIdeas();
 };
 
 window.deleteStock = async function(id){
@@ -619,6 +780,7 @@ window.deleteStock = async function(id){
   await save();
   renderStock();
   renderShop();
+  renderLeftoverIdeas();
 };
 
 window.addFreeze = async function(){
@@ -632,6 +794,7 @@ window.addFreeze = async function(){
   document.getElementById("freezeUnit").value = "";
   await save();
   renderFreezer();
+  renderLeftoverIdeas();
 };
 
 window.editFreeze = async function(id){
@@ -648,12 +811,14 @@ window.editFreeze = async function(id){
   item.unit = normalize(unit);
   await save();
   renderFreezer();
+  renderLeftoverIdeas();
 };
 
 window.deleteFreeze = async function(id){
   state.freezer = state.freezer.filter(x => x.id !== id);
   await save();
   renderFreezer();
+  renderLeftoverIdeas();
 };
 
 window.findIdeas = function(){
@@ -672,9 +837,9 @@ window.findIdeas = function(){
   box.appendChild(sourceDiv);
 
   const savedMatches = state.dishes.map(d => {
-    const score = (d.ingredients || []).filter(i => input.includes(i.name.toLowerCase())).length;
+    const score = (d.ingredients || []).filter(i => input.includes(ingredientToken(i.name))).length;
     const total = (d.ingredients || []).length || 1;
-    const missing = (d.ingredients || []).filter(i => !input.includes(i.name.toLowerCase())).map(i => i.name);
+    const missing = (d.ingredients || []).filter(i => !input.includes(ingredientToken(i.name))).map(i => i.name);
     return { dish:d, score, total, missing };
   }).filter(x => x.score > 0).sort((a,b) => b.score - a.score || a.missing.length - b.missing.length);
 
@@ -794,7 +959,7 @@ function renderShop(){
     const dish = state.dishes.find(d => d.name === name);
     if(!dish) return;
     (dish.ingredients || []).forEach(i => auto.push({
-      key: (i.name || "").toLowerCase() + "|" + (i.unit || "").toLowerCase(),
+      key: ingredientToken(i.name || "") + "|" + (i.unit || "").toLowerCase(),
       name:i.name, amount:scaleAmount(i.amount), unit:i.unit, area:i.area || "Sonstiges", fresh:!!i.fresh, auto:true
     }));
   });
@@ -841,7 +1006,7 @@ function renderShop(){
         <div class="shop-head">
           <div>
             <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
-            <div class="small-note">${item.auto ? 'Direkt hier ändern und Enter drücken oder raus tippen.' : 'Direkt hier ändern und Enter drücken oder raus tippen.'}</div>
+            <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
           </div>
           <div class="actions">
             ${item.auto ? '' : `<button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}
@@ -902,6 +1067,8 @@ function render(){
   renderShop();
   renderStock();
   renderFreezer();
+  renderLeftoverIdeas();
+  renderTodayCard();
 }
 
 onSnapshot(ref, snap => {
