@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💛 Familie Hanst Wochenplan V13</title>
+  <title>💛 Familie Hanst Wochenplan V14</title>
   <style>
     :root{
       --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
@@ -41,6 +41,7 @@
     .pill{display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12px;margin-left:6px;background:#fff}
     .pill-fav{background:var(--fav);border-color:#eed27a;color:#8e6b00}
     .pill-fresh{background:var(--fresh);border-color:#ffd285;color:#975e00}
+    .pill-special{background:#eef2ff;border-color:#ccd5ff;color:#4453a6}
     .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
@@ -54,7 +55,7 @@
 <div class="wrap">
   <section class="hero">
     <h1>💛 Familie Hanst Wochenplan</h1>
-    <p>V13 mit Resteverwertung, Heute-kochen-Ansicht, Favoriten-Würfeln, Backup/Restore und besserer Zutaten-Erkennung.</p>
+    <p>V14 mit Bild-Fix, Sonderoptionen im Wochenplan und allem aus deiner Endversion.</p>
   </section>
 
   <div id="status" class="status">Verbinde mit Firebase…</div>
@@ -120,6 +121,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
+      <div class="small-note">Bei Foto-Dateien wird das Bild automatisch verkleinert und komprimiert, damit Firebase es speichern kann.</div>
       <div class="row">
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
         <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
@@ -129,6 +131,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
     <section class="card">
       <h2 class="section-title">Wochenplan</h2>
+      <div class="small-note">Zusätzlich zu deinen Rezepten kannst du auch <b>Essen gehen</b>, <b>Essen bestellen</b> oder <b>Reste essen</b> auswählen.</div>
       <div id="week" class="list"></div>
     </section>
   </div>
@@ -223,8 +226,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const ref = doc(db, "apps", "familie-hanst-v13");
+const ref = doc(db, "apps", "familie-hanst-v14");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const SPECIAL_MEALS = ["🍽️ Essen gehen","🛵 Essen bestellen","🥡 Reste essen"];
 const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
 const AREA_TO_SUPERMARKET = {
   "Obst & Gemüse":"Obst & Gemüse",
@@ -265,7 +269,6 @@ function ingredientToken(value){
     .replace(/\b(nudeln|nudel)\b/g, "nudel")
     .replace(/\b(spaghetti)\b/g, "nudel")
     .replace(/\b(kartoffeln|kartoffel)\b/g, "kartoffel")
-    .replace(/\b(paprika)\b/g, "paprika")
     .replace(/\b(passierte tomaten|tomatensoße|tomatensosse)\b/g, "tomate")
     .replace(/\b(bohnen)\b/g, "bohne")
     .replace(/\b(erbsen)\b/g, "erbse")
@@ -359,10 +362,8 @@ function aiRecipeIdeasFromIngredients(ingredients){
 function parseQuickShop(text){
   const parts = normalize(text).split(/\s+/);
   if(parts.length <= 1) return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
-
   const maybeAmount = parts[parts.length-2];
   const maybeUnit = parts[parts.length-1];
-
   if(!Number.isNaN(parseNumber(maybeAmount))){
     return {
       name: normalize(parts.slice(0, -2).join(" ")),
@@ -372,13 +373,12 @@ function parseQuickShop(text){
       fresh: false
     };
   }
-
   return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
 }
 
-function weightedDishPool(){
+function weightedDishPool(source = state.dishes){
   const pool = [];
-  state.dishes.forEach(d => {
+  source.forEach(d => {
     pool.push(d);
     if(d.favorite) pool.push(d, d, d);
   });
@@ -418,12 +418,45 @@ function getAvailableIngredientInput(){
 
   const stock = (state.stock || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
   const freezer = (state.freezer || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
-  return [...new Set([...entered, ...stock, ...freezer])];
+  return [...new Set([...entered, ...stock, ...freezer].map(ingredientToken).filter(Boolean))];
 }
 
 function getTodayIndex(){
-  const day = new Date().getDay(); // 0 Sun
+  const day = new Date().getDay();
   return day === 0 ? 6 : day - 1;
+}
+
+function specialMealBadge(name){
+  return SPECIAL_MEALS.includes(name) ? `<span class="pill pill-special">Sonderoption</span>` : "";
+}
+
+async function compressImageFile(file, maxSide = 900, quality = 0.72){
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  let { width, height } = img;
+  const ratio = Math.min(1, maxSide / Math.max(width, height));
+  width = Math.round(width * ratio);
+  height = Math.round(height * ratio);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, width, height);
+
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
 function renderTodayCard(){
@@ -433,7 +466,20 @@ function renderTodayCard(){
   const planned = state.week[idx];
   const dish = state.dishes.find(d => d.name === planned);
 
-  if(!planned || !dish){
+  if(!planned){
+    card.style.display = "none";
+    card.innerHTML = "";
+    return;
+  }
+
+  if(SPECIAL_MEALS.includes(planned)){
+    card.style.display = "block";
+    card.innerHTML = `<h2 class="section-title">🍳 Heute: ${escapeHtml(dayName)}</h2>
+      <div class="title">${escapeHtml(planned)} ${specialMealBadge(planned)}</div>`;
+    return;
+  }
+
+  if(!dish){
     card.style.display = "none";
     card.innerHTML = "";
     return;
@@ -453,7 +499,7 @@ window.showTodayCooking = function(){
   renderTodayCard();
   const card = document.getElementById("todayCard");
   if(card.style.display === "none"){
-    alert("Für heute ist noch kein Gericht im Wochenplan eingetragen.");
+    alert("Für heute ist noch nichts im Wochenplan eingetragen.");
     return;
   }
   card.scrollIntoView({behavior:"smooth", block:"start"});
@@ -570,12 +616,15 @@ window.addDish = async function(){
     render();
   };
 
-  if(file){
-    const reader = new FileReader();
-    reader.onload = async e => { await finish(e.target.result); };
-    reader.readAsDataURL(file);
-  } else {
-    await finish("");
+  try{
+    if(file){
+      const compressed = await compressImageFile(file);
+      await finish(compressed);
+    } else {
+      await finish("");
+    }
+  }catch(err){
+    alert("Bild konnte nicht verarbeitet werden. Bitte ein kleineres Foto probieren.");
   }
 };
 
@@ -649,8 +698,8 @@ window.smartWeek = async function(){
 };
 
 window.rollDay = async function(i){
-  if(!state.dishes.length) return;
-  const pool = weightedDishPool();
+  const pool = [...weightedDishPool(), ...SPECIAL_MEALS.map(name => ({name, favorite:false}))];
+  if(!pool.length) return;
   const dish = pool[Math.floor(Math.random()*pool.length)];
   state.week[i] = dish.name;
   await save();
@@ -936,14 +985,17 @@ function renderDishes(){
 function renderWeek(){
   const box = document.getElementById("week");
   box.innerHTML = "";
+  const optionsAll = [...state.dishes.map(d => d.name), ...SPECIAL_MEALS];
   DAYS.forEach((day,i) => {
-    const options = state.dishes.map(d => `<option value="${escapeHtml(d.name)}" ${state.week[i]===d.name ? "selected" : ""}>${escapeHtml(d.name)}</option>`).join("");
+    const options = optionsAll.map(name => `<option value="${escapeHtml(name)}" ${state.week[i]===name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("");
+    const special = SPECIAL_MEALS.includes(state.week[i]);
     const row = document.createElement("div");
     row.className = "weekrow";
     row.innerHTML = `<div class="title">${day}</div>
       <div class="daycontent">
         <input value="${escapeHtml(state.week[i] || "")}" oninput="updateDay(${i}, this.value)">
         <select onchange="updateDay(${i}, this.value)"><option value="">Gericht wählen</option>${options}</select>
+        ${special ? `<div>${specialMealBadge(state.week[i])}</div>` : ""}
       </div>
       <button class="small" onclick="rollDay(${i})">🎲</button>`;
     box.appendChild(row);
@@ -956,6 +1008,7 @@ function renderShop(){
 
   const auto = [];
   state.week.forEach(name => {
+    if(SPECIAL_MEALS.includes(name)) return;
     const dish = state.dishes.find(d => d.name === name);
     if(!dish) return;
     (dish.ingredients || []).forEach(i => auto.push({
