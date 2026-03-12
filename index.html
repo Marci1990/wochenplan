@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>💛 Familie Hanst Wochenplan</title>
   <style>
     :root{
       --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
       --border:#ead7e2; --primary:#ef5f95; --primary-dark:#df4c84; --secondary:#eef2ff;
-      --danger:#ffe3e6; --danger-text:#a61b3b; --shadow:0 8px 24px rgba(0,0,0,.06);
+      --danger:#ffe3e6; --danger-text:#a61b3b; --success:#e8fff1; --success-text:#176a47;
+      --fresh:#fff7e8; --hint:#fff4e8; --fav:#fff6cf; --shadow:0 8px 24px rgba(0,0,0,.06);
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text)}
-    .wrap{max-width:1250px;margin:0 auto;padding:18px}
+    .wrap{max-width:1260px;margin:0 auto;padding:18px}
     .hero{background:linear-gradient(135deg,#ff8fb0,#ff6d97 60%,#8d9cff);color:#fff;border-radius:24px;padding:22px;margin-bottom:16px;box-shadow:var(--shadow)}
     .hero h1{margin:0 0 8px}.hero p{margin:0;opacity:.95}
     .status,.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
@@ -27,24 +28,30 @@
     button:hover{background:var(--primary-dark)}
     button.soft{background:var(--secondary);color:#28324a}
     button.danger{background:var(--danger);color:var(--danger-text)}
+    button.success{background:var(--success);color:var(--success-text)}
     button.small{padding:6px 10px;font-size:13px}
-    .grow{flex:1;min-width:180px}.w120{width:120px}.w140{width:140px}
+    .grow{flex:1;min-width:180px}.w110{width:110px}.w120{width:120px}.w140{width:140px}
     .list{display:flex;flex-direction:column;gap:10px}
-    .box,.weekrow,.simpleitem,.recipehint{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
-    .weekrow{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:start}
+    .box,.area,.weekrow,.simpleitem,.recipehint{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
+    .weekrow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:start}
     @media (max-width:700px){.weekrow{grid-template-columns:1fr}}
     .daycontent{display:flex;flex-direction:column;gap:8px}
     .title{font-weight:700}.meta{color:var(--muted);font-size:14px;white-space:pre-wrap;margin-top:6px}
+    .hint{background:var(--hint);border:1px solid #ffd8b0;color:#9b5e00;border-radius:10px;padding:6px 8px;margin:8px 0;font-size:14px}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12px;margin-left:6px;background:#fff}
+    .pill-fav{background:var(--fav);border-color:#eed27a;color:#8e6b00}
+    .pill-fresh{background:var(--fresh);border-color:#ffd285;color:#975e00}
     .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .small-note{font-size:13px;color:var(--muted)}
-    .empty{color:var(--muted)}
+    .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
+    .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
+    .section-title{margin-bottom:8px}
   </style>
 </head>
 <body>
 <div class="wrap">
   <section class="hero">
     <h1>💛 Familie Hanst Wochenplan</h1>
-    <p>Firebase Sync, schönes Layout, Einkaufsliste, Vorrat und Ideen aus Zutaten.</p>
+    <p>Firebase Sync, Einzel-Tageswürfeln, Vorrat-Abgleich, bearbeitbare Einkaufsliste und Ideen aus Zutaten.</p>
   </section>
 
   <div id="status" class="status">Verbinde mit Firebase…</div>
@@ -53,6 +60,7 @@
     <div class="row">
       <button onclick="randomWeek()">🎲 Zufallsplan</button>
       <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
+      <button class="soft" onclick="loadExamples()">Beispiele laden</button>
       <label style="display:flex;align-items:center;gap:8px;font-weight:700;">Personen
         <select id="servingsSelect" style="width:auto;" onchange="setPersons(this.value)">
           <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
@@ -63,34 +71,58 @@
 
   <div class="grid">
     <section class="card">
-      <h2>Gericht hinzufügen / bearbeiten</h2>
+      <h2 class="section-title">Gericht hinzufügen / bearbeiten</h2>
       <input id="dishName" placeholder="Gericht">
-      <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile"></textarea>
+      <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile:
+Name|Menge|Einheit|Bereich|frisch
+
+Beispiel:
+Hackfleisch|500|g|Fleisch & Fisch|frisch
+Tomatensoße|2|Gläser|Trockenwaren|
+Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
+      <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
+      <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <div class="row">
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
-        <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Abbrechen</button>
+        <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
       </div>
     </section>
 
     <section class="card">
-      <h2>Wochenplan</h2>
+      <h2 class="section-title">Wochenplan</h2>
       <div id="week" class="list"></div>
     </section>
   </div>
 
   <div class="grid2">
     <section class="card">
-      <h2>Gespeicherte Gerichte</h2>
-      <div id="dishList" class="list"></div>
+      <h2 class="section-title">Gespeicherte Gerichte</h2>
+      <input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()">
+      <div id="dishList" class="list" style="margin-top:10px"></div>
     </section>
 
     <section class="card">
-      <h2>Einkaufsliste</h2>
-      <div class="small-note">Automatisch aus dem Wochenplan. Manuell hinzufügen und bearbeiten.</div>
+      <h2 class="section-title">Einkaufsliste</h2>
+      <div class="small-note">Automatisch aus dem Wochenplan. Manuell hinzufügen und manuelle Artikel bearbeiten.</div>
       <div class="row" style="margin-top:12px">
         <input id="shopName" class="grow" placeholder="Artikel">
-        <input id="shopAmount" class="w120" placeholder="Menge">
+        <input id="shopAmount" class="w110" placeholder="Menge">
+        <input id="shopUnit" class="w110" placeholder="Einheit">
+      </div>
+      <div class="row">
+        <select id="shopArea" class="grow">
+          <option>Obst & Gemüse</option>
+          <option>Kühlregal</option>
+          <option>Fleisch & Fisch</option>
+          <option>Tiefkühl</option>
+          <option>Trockenwaren</option>
+          <option>Gewürze</option>
+          <option>Getränke</option>
+          <option>Bäckerei</option>
+          <option selected>Sonstiges</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
         <button onclick="addShop()">Hinzufügen</button>
       </div>
       <div id="shopList" class="list"></div>
@@ -99,25 +131,43 @@
 
   <div class="grid2">
     <section class="card">
-      <h2>Vorrat</h2>
+      <h2 class="section-title">Vorrat</h2>
       <div class="small-note">Wird von der Einkaufsliste abgezogen.</div>
       <div class="row" style="margin-top:12px">
         <input id="stockName" class="grow" placeholder="Artikel">
-        <input id="stockAmount" class="w120" placeholder="Menge">
+        <input id="stockAmount" class="w110" placeholder="Menge">
+        <input id="stockUnit" class="w110" placeholder="Einheit">
         <button onclick="addStock()">Hinzufügen</button>
       </div>
       <div id="stockList" class="list"></div>
     </section>
 
     <section class="card">
-      <h2>Was kann ich aus folgenden Zutaten kochen?</h2>
-      <textarea id="ideaInput" placeholder="z.B.&#10;Tomaten&#10;Nudeln&#10;Zwiebeln"></textarea>
+      <h2 class="section-title">Was kann ich aus folgenden Zutaten kochen?</h2>
+      <div class="small-note">Sucht zuerst in deinen gespeicherten Gerichten. Zusätzlich gibt es direkte Web-Rezeptsuche.</div>
+      <textarea id="ideaInput" placeholder="z.B.
+Tomaten
+Nudeln
+Zwiebeln
+Hackfleisch"></textarea>
       <div class="row" style="margin-top:10px">
         <button onclick="findIdeas()">Ideen anzeigen</button>
         <button class="soft" onclick="clearIdeas()">Leeren</button>
+        <button class="soft" onclick="searchIdeasGoogle()">Google</button>
+        <button class="soft" onclick="searchIdeasChefkoch()">Chefkoch</button>
       </div>
       <div id="ideaResults" class="list"></div>
     </section>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Rezeptsuche</h2>
+    <div class="row">
+      <input id="searchName" class="grow" placeholder="z.B. Lasagne">
+      <button class="soft" onclick="searchGoogle()">Google</button>
+      <button class="soft" onclick="searchChef()">Chefkoch</button>
+      <button class="soft" onclick="searchThermo()">Thermomix</button>
+    </div>
   </div>
 </div>
 
@@ -136,8 +186,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const ref = doc(db, "apps", "familie-hanst-einfach");
+const ref = doc(db, "apps", "familie-hanst-final-v7");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
 
 let state = {
   dishes: [],
@@ -150,6 +201,7 @@ let state = {
 
 const normalize = t => String(t || "").trim();
 const escapeHtml = t => String(t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const jsEscape = t => String(t || "").replace(/'/g, "\\'");
 const parseNumber = v => parseFloat(String(v).replace(",", "."));
 const isNumeric = v => !Number.isNaN(parseNumber(v));
 const updateStatus = t => document.getElementById("status").textContent = t;
@@ -167,16 +219,30 @@ function scaleAmount(amount){
 function parseIngredients(text){
   return text.split("\n").map(x => x.trim()).filter(Boolean).map(line => {
     const p = line.split("|").map(x => x.trim());
-    return { name: normalize(p[0] || ""), amount: normalize(p[1] || ""), unit: normalize(p[2] || "") };
+    return {
+      name: normalize(p[0] || ""),
+      amount: normalize(p[1] || ""),
+      unit: normalize(p[2] || ""),
+      area: AREAS.includes(normalize(p[3] || "")) ? normalize(p[3]) : "Sonstiges",
+      fresh: normalize(p[4] || "").toLowerCase() === "frisch"
+    };
   }).filter(x => x.name);
 }
 
 function ingredientsToText(items){
-  return (items || []).map(i => [i.name, i.amount, i.unit].join("|")).join("\n");
+  return (items || []).map(i => [i.name, i.amount, i.unit, i.area, i.fresh ? "frisch" : ""].join("|")).join("\n");
+}
+
+function ingredientLabel(i){
+  const qty = [scaleAmount(i.amount), i.unit].filter(Boolean).join(" ");
+  return qty ? `${i.name} (${qty})` : i.name;
 }
 
 function stockMatch(item){
-  return state.stock.find(s => s.name.toLowerCase() === item.name.toLowerCase());
+  return state.stock.find(s =>
+    s.name.toLowerCase() === item.name.toLowerCase() &&
+    (s.unit || "").toLowerCase() === (item.unit || "").toLowerCase()
+  );
 }
 
 window.setPersons = async function(v){
@@ -188,10 +254,12 @@ window.setPersons = async function(v){
 window.addDish = async function(){
   const name = normalize(document.getElementById("dishName").value);
   const hint = normalize(document.getElementById("dishHint").value);
+  const image = normalize(document.getElementById("dishImageUrl").value);
+  const favorite = document.getElementById("dishFavorite").checked;
   const ingredients = parseIngredients(document.getElementById("dishIngredients").value);
   if(!name) return;
 
-  const dish = { name, hint, ingredients };
+  const dish = { name, hint, image, favorite, ingredients };
 
   if(state.editIndex !== null){
     const old = state.dishes[state.editIndex]?.name || "";
@@ -207,6 +275,8 @@ window.addDish = async function(){
   document.getElementById("dishName").value = "";
   document.getElementById("dishIngredients").value = "";
   document.getElementById("dishHint").value = "";
+  document.getElementById("dishImageUrl").value = "";
+  document.getElementById("dishFavorite").checked = false;
   await save();
   render();
 };
@@ -217,6 +287,8 @@ window.editDish = function(i){
   document.getElementById("dishName").value = dish.name || "";
   document.getElementById("dishIngredients").value = ingredientsToText(dish.ingredients || []);
   document.getElementById("dishHint").value = dish.hint || "";
+  document.getElementById("dishImageUrl").value = dish.image || "";
+  document.getElementById("dishFavorite").checked = !!dish.favorite;
   state.editIndex = i;
   document.getElementById("saveDishBtn").textContent = "Änderungen speichern";
   document.getElementById("cancelEditBtn").style.display = "inline-block";
@@ -228,21 +300,35 @@ window.cancelEdit = function(){
   document.getElementById("dishName").value = "";
   document.getElementById("dishIngredients").value = "";
   document.getElementById("dishHint").value = "";
+  document.getElementById("dishImageUrl").value = "";
+  document.getElementById("dishFavorite").checked = false;
   document.getElementById("saveDishBtn").textContent = "Speichern";
   document.getElementById("cancelEditBtn").style.display = "none";
 };
 
 window.deleteDish = async function(i){
+  const removed = state.dishes[i];
+  if(!removed) return;
   state.dishes.splice(i,1);
+  state.week = state.week.map(x => x === removed.name ? "" : x);
   await save();
   render();
 };
 
 window.randomWeek = async function(){
   if(!state.dishes.length) return;
-  state.week = DAYS.map(() => state.dishes[Math.floor(Math.random() * state.dishes.length)].name);
+  state.week = DAYS.map(() => state.dishes[Math.floor(Math.random()*state.dishes.length)].name);
   await save();
   render();
+};
+
+window.rollDay = async function(i){
+  if(!state.dishes.length) return;
+  const dish = state.dishes[Math.floor(Math.random()*state.dishes.length)];
+  state.week[i] = dish.name;
+  await save();
+  renderWeek();
+  renderShop();
 };
 
 window.clearWeek = async function(){
@@ -261,10 +347,16 @@ window.updateDay = async function(i, val){
 window.addShop = async function(){
   const name = normalize(document.getElementById("shopName").value);
   const amount = normalize(document.getElementById("shopAmount").value);
+  const unit = normalize(document.getElementById("shopUnit").value);
+  const area = normalize(document.getElementById("shopArea").value) || "Sonstiges";
+  const fresh = document.getElementById("shopFresh").checked;
   if(!name) return;
-  state.shopping.push({ id: Date.now().toString(), name, amount });
+  state.shopping.push({ id: Date.now().toString(), name, amount, unit, area, fresh });
   document.getElementById("shopName").value = "";
   document.getElementById("shopAmount").value = "";
+  document.getElementById("shopUnit").value = "";
+  document.getElementById("shopArea").value = "Sonstiges";
+  document.getElementById("shopFresh").checked = false;
   await save();
   renderShop();
 };
@@ -276,8 +368,11 @@ window.editShop = async function(id){
   if(name === null) return;
   const amount = prompt("Menge", item.amount || "");
   if(amount === null) return;
+  const unit = prompt("Einheit", item.unit || "");
+  if(unit === null) return;
   item.name = normalize(name);
   item.amount = normalize(amount);
+  item.unit = normalize(unit);
   await save();
   renderShop();
 };
@@ -291,10 +386,12 @@ window.deleteShop = async function(id){
 window.addStock = async function(){
   const name = normalize(document.getElementById("stockName").value);
   const amount = normalize(document.getElementById("stockAmount").value);
+  const unit = normalize(document.getElementById("stockUnit").value);
   if(!name) return;
-  state.stock.push({ id: Date.now().toString(), name, amount });
+  state.stock.push({ id: Date.now().toString(), name, amount, unit });
   document.getElementById("stockName").value = "";
   document.getElementById("stockAmount").value = "";
+  document.getElementById("stockUnit").value = "";
   await save();
   renderStock();
   renderShop();
@@ -307,8 +404,11 @@ window.editStock = async function(id){
   if(name === null) return;
   const amount = prompt("Menge", item.amount || "");
   if(amount === null) return;
+  const unit = prompt("Einheit", item.unit || "");
+  if(unit === null) return;
   item.name = normalize(name);
   item.amount = normalize(amount);
+  item.unit = normalize(unit);
   await save();
   renderStock();
   renderShop();
@@ -328,18 +428,25 @@ window.findIdeas = function(){
 
   const matches = state.dishes.map(d => {
     const score = (d.ingredients || []).filter(i => input.includes(i.name.toLowerCase())).length;
-    return { dish:d, score };
+    const missing = (d.ingredients || []).filter(i => !input.includes(i.name.toLowerCase())).map(i => i.name);
+    return { dish:d, score, total:(d.ingredients || []).length, missing };
   }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
 
   if(!matches.length){
-    box.innerHTML = '<div class="empty">Keine passende Idee gefunden.</div>';
+    box.innerHTML = '<div class="empty">Keine passende Idee gefunden. Nutze die Web-Suche unten.</div>';
     return;
   }
 
   matches.forEach(item => {
     const div = document.createElement("div");
     div.className = "recipehint";
-    div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)}</div><div class="meta">${item.score} Zutaten passen</div>`;
+    div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)}</div>
+      <div class="meta">${item.score} von ${item.total} Zutaten passen</div>
+      ${item.missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(item.missing.join(", "))}</div>` : `<div class="meta">Passt komplett ✅</div>`}
+      <div class="actions">
+        <button class="soft small" onclick="searchDishName('${jsEscape(item.dish.name)}')">Im Internet suchen</button>
+        <button class="soft small" onclick="searchChefName('${jsEscape(item.dish.name)}')">Chefkoch</button>
+      </div>`;
     box.appendChild(div);
   });
 };
@@ -349,24 +456,76 @@ window.clearIdeas = function(){
   document.getElementById("ideaResults").innerHTML = "";
 };
 
+window.searchIdeasGoogle = function(){
+  const q = document.getElementById("ideaInput").value.split("\n").map(x => normalize(x)).filter(Boolean).join(" ");
+  if(q) window.open("https://www.google.com/search?q=" + encodeURIComponent(q + " rezept"), "_blank");
+};
+
+window.searchIdeasChefkoch = function(){
+  const q = document.getElementById("ideaInput").value.split("\n").map(x => normalize(x)).filter(Boolean).join(" ");
+  if(q) window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(q) + "/Rezepte.html", "_blank");
+};
+
+window.searchDishName = function(name){
+  window.open("https://www.google.com/search?q=" + encodeURIComponent(name + " rezept"), "_blank");
+};
+
+window.searchChefName = function(name){
+  window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(name) + "/Rezepte.html", "_blank");
+};
+
+window.searchGoogle = function(){
+  const q = normalize(document.getElementById("searchName").value);
+  if(q) window.open("https://www.google.com/search?q=" + encodeURIComponent(q + " rezept"), "_blank");
+};
+
+window.searchChef = function(){
+  const q = normalize(document.getElementById("searchName").value);
+  if(q) window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(q) + "/Rezepte.html", "_blank");
+};
+
+window.searchThermo = function(){
+  const q = normalize(document.getElementById("searchName").value);
+  if(q) window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(q), "_blank");
+};
+
+window.loadExamples = async function(){
+  if(state.dishes.length) return;
+  state.dishes = [
+    {name:"Spaghetti Bolognese", hint:"Hackfleisch auftauen", image:"", favorite:true, ingredients:parseIngredients("Spaghetti|500|g|Trockenwaren|\nHackfleisch|500|g|Fleisch & Fisch|frisch\nTomatensoße|2|Gläser|Trockenwaren|\nZwiebeln|2|Stück|Obst & Gemüse|frisch")},
+    {name:"Wraps", hint:"Salat frisch kaufen", image:"", favorite:false, ingredients:parseIngredients("Wraps|1|Packung|Trockenwaren|\nHähnchen|400|g|Fleisch & Fisch|frisch\nSalat|1|Kopf|Obst & Gemüse|frisch\nSoße|1|Flasche|Trockenwaren|")},
+    {name:"Salat mit Feta", hint:"Am selben Tag machen", image:"", favorite:false, ingredients:parseIngredients("Salat|1|Kopf|Obst & Gemüse|frisch\nFeta|1|Packung|Kühlregal|frisch\nTomaten|4|Stück|Obst & Gemüse|frisch")}
+  ];
+  await save();
+  render();
+};
+
 function renderDishes(){
+  const q = normalize(document.getElementById("recipeSearch").value).toLowerCase();
   const box = document.getElementById("dishList");
   box.innerHTML = "";
-  if(!state.dishes.length){
+  let dishes = state.dishes.slice();
+  if(q) dishes = dishes.filter(d => d.name.toLowerCase().includes(q));
+  if(!dishes.length){
     box.innerHTML = '<div class="empty">Noch keine Gerichte gespeichert.</div>';
     return;
   }
-  state.dishes.forEach((d,i) => {
+
+  dishes.forEach(d => {
+    const i = state.dishes.indexOf(d);
+    const preview = (d.ingredients || []).map(ingredientLabel).join(", ");
     const div = document.createElement("div");
     div.className = "box";
-    const preview = (d.ingredients || []).map(i => {
-      const qty = [scaleAmount(i.amount), i.unit].filter(Boolean).join(" ");
-      return qty ? `${i.name} (${qty})` : i.name;
-    }).join(", ");
-    div.innerHTML = `<div class="title">${escapeHtml(d.name)}</div>
+    div.innerHTML = `<div class="title">${escapeHtml(d.name)} ${d.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
       ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
       <div class="meta">${escapeHtml(preview)}</div>
-      <div class="actions"><button class="soft small" onclick="editDish(${i})">Bearbeiten</button><button class="danger small" onclick="deleteDish(${i})">Löschen</button></div>`;
+      ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
+      <div class="actions">
+        <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
+        <button class="soft small" onclick="searchDishName('${jsEscape(d.name)}')">Google</button>
+        <button class="soft small" onclick="searchChefName('${jsEscape(d.name)}')">Chefkoch</button>
+        <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
+      </div>`;
     box.appendChild(div);
   });
 }
@@ -382,7 +541,8 @@ function renderWeek(){
       <div class="daycontent">
         <input value="${escapeHtml(state.week[i] || "")}" oninput="updateDay(${i}, this.value)">
         <select onchange="updateDay(${i}, this.value)"><option value="">Gericht wählen</option>${options}</select>
-      </div>`;
+      </div>
+      <button class="small" onclick="rollDay(${i})">🎲</button>`;
     box.appendChild(row);
   });
 }
@@ -417,9 +577,10 @@ function renderShop(){
   }
 
   merged.forEach(item => {
+    const label = [item.amount, item.unit].filter(Boolean).join(" ");
     const div = document.createElement("div");
     div.className = "simpleitem";
-    div.innerHTML = `<span>${escapeHtml(item.name)}${item.amount ? " – " + escapeHtml(item.amount) : ""}${item.auto ? " (auto)" : ""}</span>
+    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}${item.auto ? " (auto)" : ""}</span>
       <div class="actions">${item.auto ? "" : `<button class="soft small" onclick="editShop('${item.id}')">Ändern</button><button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}</div>`;
     box.appendChild(div);
   });
@@ -435,7 +596,8 @@ function renderStock(){
   state.stock.forEach(item => {
     const div = document.createElement("div");
     div.className = "simpleitem";
-    div.innerHTML = `<span>${escapeHtml(item.name)}${item.amount ? " – " + escapeHtml(item.amount) : ""}</span>
+    const label = [item.amount, item.unit].filter(Boolean).join(" ");
+    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}</span>
       <div class="actions"><button class="soft small" onclick="editStock('${item.id}')">Ändern</button><button class="danger small" onclick="deleteStock('${item.id}')">Löschen</button></div>`;
     box.appendChild(div);
   });
