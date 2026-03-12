@@ -1,1 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Familie Hanst Wochenplan</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f7f7ff;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+button{
+padding:10px;
+border:none;
+background:#ef5f95;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+input{
+padding:10px;
+margin:5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>💛 Familie Hanst Wochenplan</h1>
+
+<div class="card">
+
+<h3>Gericht hinzufügen</h3>
+
+<input id="dishName" placeholder="Gericht">
+
+<button onclick="addDish()">Hinzufügen</button>
+
+</div>
+
+<div class="card">
+
+<h3>Gerichte</h3>
+
+<div id="dishList"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Wochenplan</h3>
+
+<div id="week"></div>
+
+<button onclick="randomWeek()">🎲 Zufallsplan</button>
+
+</div>
+
+<script>
+
+const supabaseUrl = "https://rtcutlvjjxzmgzyavjjm.supabase.co"
+
+const supabaseKey = "PASTE_DEIN_ANON_KEY_HIER"
+
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+const APP_STATE_ID = "familie-hanst-main"
+
+let dishes = []
+let week = Array(7).fill("")
+
+async function saveData(){
+
+const payload = {
+dishes,
+week
+}
+
+await supabase
+.from("app_state")
+.upsert([
+{
+id: APP_STATE_ID,
+data: payload,
+updated_at: new Date().toISOString()
+}
+])
+
+}
+
+async function loadData(){
+
+const { data } = await supabase
+.from("app_state")
+.select("data")
+.eq("id", APP_STATE_ID)
+.maybeSingle()
+
+if(data && data.data){
+
+dishes = data.data.dishes || []
+week = data.data.week || Array(7).fill("")
+
+}
+
+}
+
+function addDish(){
+
+const name = document.getElementById("dishName").value.trim()
+
+if(!name) return
+
+dishes.push({name})
+
+document.getElementById("dishName").value = ""
+
+saveData()
+
+render()
+
+}
+
+function randomWeek(){
+
+for(let i=0;i<7;i++){
+
+if(dishes.length==0) return
+
+const r = Math.floor(Math.random()*dishes.length)
+
+week[i] = dishes[r].name
+
+}
+
+saveData()
+
+render()
+
+}
+
+function renderDishes(){
+
+const box = document.getElementById("dishList")
+
+box.innerHTML=""
+
+dishes.forEach(d=>{
+
+const div=document.createElement("div")
+
+div.innerHTML=d.name
+
+box.appendChild(div)
+
+})
+
+}
+
+const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"]
+
+function renderWeek(){
+
+const box=document.getElementById("week")
+
+box.innerHTML=""
+
+DAYS.forEach((day,i)=>{
+
+const div=document.createElement("div")
+
+div.innerHTML=`
+<strong>${day}</strong>
+<input value="${week[i]||""}" oninput="updateDay(${i},this.value)">
+`
+
+box.appendChild(div)
+
+})
+
+}
+
+function updateDay(i,val){
+
+week[i]=val
+
+saveData()
+
+}
+
+function render(){
+
+renderDishes()
+
+renderWeek()
+
+}
+
+document.addEventListener("DOMContentLoaded",async()=>{
+
+await loadData()
+
+render()
+
+})
+
+</script>
+
+</body>
+</html>
