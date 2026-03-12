@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💛 Familie Hanst Wochenplan V11</title>
+  <title>💛 Familie Hanst Wochenplan V12</title>
   <style>
     :root{
       --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
@@ -28,11 +28,10 @@
     button:hover{background:var(--primary-dark)}
     button.soft{background:var(--secondary);color:#28324a}
     button.danger{background:var(--danger);color:var(--danger-text)}
-    button.success{background:var(--success);color:var(--success-text)}
     button.small{padding:6px 10px;font-size:13px}
-    .grow{flex:1;min-width:180px}.w110{width:110px}.w120{width:120px}.w140{width:140px}
+    .grow{flex:1;min-width:180px}.w110{width:110px}.w120{width:120px}
     .list{display:flex;flex-direction:column;gap:10px}
-    .box,.weekrow,.simpleitem,.recipehint{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
+    .box,.weekrow,.simpleitem,.recipehint,.shopbox{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
     .weekrow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:start}
     @media (max-width:700px){.weekrow{grid-template-columns:1fr}}
     .daycontent{display:flex;flex-direction:column;gap:8px}
@@ -46,14 +45,15 @@
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
     .section-title{margin-bottom:8px}
     .tag{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#f7f7fb;border:1px solid var(--border);margin-right:6px;margin-top:6px}
-    .supermarket{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
+    .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
   </style>
 </head>
 <body>
 <div class="wrap">
   <section class="hero">
     <h1>💛 Familie Hanst Wochenplan</h1>
-    <p>Luxus Edition mit Firebase, Favoriten, smarter Wochenplanung, Supermarkt-Sortierung und KI-Ideen aus Zutaten.</p>
+    <p>Firebase Sync, bessere Rezeptideen, Vorrat + Gefrierschrank in den Vorschlägen und schnelle Einkaufsliste zum Direktbearbeiten.</p>
   </section>
 
   <div id="status" class="status">Verbinde mit Firebase…</div>
@@ -91,6 +91,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
         <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
       </div>
+      <div class="small-note">Echte externe KI wie ChatGPT oder andere Dienste braucht einen eigenen API-Schlüssel. Diese Version nutzt deine gespeicherten Rezepte plus intelligente lokale Vorschläge.</div>
     </section>
 
     <section class="card">
@@ -108,7 +109,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
     <section class="card">
       <h2 class="section-title">Einkaufsliste</h2>
-      <div class="small-note">Automatisch aus dem Wochenplan. Gleiche Zutaten werden zusammengefasst. Du kannst auch automatisch erzeugte Artikel bearbeiten.</div>
+      <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach kannst du jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
       <div class="row" style="margin-top:12px">
         <input id="shopQuick" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
       </div>
@@ -151,7 +152,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
     <section class="card">
       <h2 class="section-title">Gefrierschrank</h2>
-      <div class="small-note">Hier kannst du eingefrorene Sachen eintragen und den Überblick behalten.</div>
+      <div class="small-note">Wird bei den Koch-Ideen automatisch mit berücksichtigt.</div>
       <div class="row" style="margin-top:12px">
         <input id="freezeName" class="grow" placeholder="z.B. Hackfleisch, Suppe, Brot">
         <input id="freezeAmount" class="w110" placeholder="Menge">
@@ -164,7 +165,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
   <div class="card">
     <h2 class="section-title">Was kann ich heute aus folgenden Zutaten kochen?</h2>
-    <div class="small-note">Nutzt zuerst deine gespeicherten Gerichte und ergänzt dann intelligente Vorschläge direkt aus den Zutaten – ohne Google oder Chefkoch.</div>
+    <div class="small-note">Nutzt eingegebene Zutaten + Vorrat + Gefrierschrank. Zeigt zuerst passende gespeicherte Gerichte und dann bessere KI-Ideen direkt aus deinen Zutaten.</div>
     <textarea id="ideaInput" placeholder="z.B.
 Tomaten
 Nudeln
@@ -203,7 +204,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const ref = doc(db, "apps", "familie-hanst-v11");
+const ref = doc(db, "apps", "familie-hanst-v12");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
 const AREA_TO_SUPERMARKET = {
@@ -298,27 +299,34 @@ function aiRecipeIdeasFromIngredients(ingredients){
   const hasAny = (...items) => items.some(i => set.has(i));
   const hasAll = (...items) => items.every(i => set.has(i));
 
-  if(set.has("eier") && hasAny("käse","schinken","tomaten","zwiebeln")) ideas.push({name:"Omelette / Rührei-Variante", why:"Eier passen sehr gut mit Käse, Schinken, Tomaten oder Zwiebeln."});
-  if(hasAny("nudeln","spaghetti") && hasAny("tomaten","tomatensoße","passierte tomaten")) ideas.push({name:"Schnelle Tomaten-Nudeln", why:"Nudeln und Tomaten ergeben direkt ein schnelles Pasta-Gericht."});
-  if(hasAny("brot","toast") && hasAny("käse","schinken","salami")) ideas.push({name:"Überbackene Brote / Toasts", why:"Brot oder Toast mit Käse und Belag geht schnell."});
-  if(hasAny("kartoffeln") && hasAny("zwiebeln","eier","käse")) ideas.push({name:"Kartoffelpfanne", why:"Kartoffeln lassen sich super mit Ei, Zwiebeln oder Käse kombinieren."});
-  if(hasAny("reis") && hasAny("gemüse","erbsen","mais","paprika","zwiebeln","hähnchen")) ideas.push({name:"Reis-Pfanne", why:"Reis mit Gemüse oder Hähnchen ist eine einfache Resteküche-Idee."});
-  if(hasAny("wraps","tortilla") && hasAny("käse","salat","hähnchen","hackfleisch","tomaten")) ideas.push({name:"Wraps / Quesadillas", why:"Die Zutaten passen gut für schnelle gefüllte Wraps."});
-  if(hasAny("hackfleisch") && hasAny("nudeln","spaghetti","tomaten","tomatensoße")) ideas.push({name:"Hackfleisch-Pasta", why:"Hackfleisch mit Nudeln oder Tomaten passt sehr gut zusammen."});
-  if(hasAny("salat","gurke","tomaten","feta","mozzarella")) ideas.push({name:"Schneller Salat-Teller", why:"Frische Zutaten passen gut als leichter Salat."});
-  if(hasAny("mehl") && hasAny("milch","eier")) ideas.push({name:"Pfannkuchen / Crêpes", why:"Aus Mehl, Milch und Eiern lässt sich direkt etwas machen."});
+  if(hasAll("eier","käse")) ideas.push({name:"Käse-Omelette", why:"Eier und Käse ergeben direkt ein schnelles warmes Gericht."});
+  if(hasAll("eier","tomaten")) ideas.push({name:"Tomaten-Ei-Pfanne", why:"Tomaten und Eier passen super zusammen und gehen schnell."});
+  if(hasAny("nudeln","spaghetti") && hasAny("tomaten","tomatensoße","passierte tomaten")) ideas.push({name:"Tomatenpasta", why:"Nudeln und Tomaten sind die perfekte Basis für ein schnelles Gericht."});
+  if(hasAny("nudeln","spaghetti") && hasAny("hackfleisch")) ideas.push({name:"Hackfleisch-Nudeln", why:"Hackfleisch bringt direkt eine sättigende Basis für Pasta."});
+  if(hasAny("reis") && hasAny("gemüse","paprika","mais","erbsen","zwiebeln")) ideas.push({name:"Bunte Reispfanne", why:"Reis lässt sich sehr gut mit Gemüse und Resten kombinieren."});
+  if(hasAny("kartoffeln") && hasAny("zwiebeln","eier","käse")) ideas.push({name:"Kartoffelpfanne", why:"Kartoffeln, Zwiebeln, Ei oder Käse passen sehr gut zusammen."});
+  if(hasAny("brot","toast") && hasAny("käse","schinken","salami")) ideas.push({name:"Überbackene Brote", why:"Aus Brot oder Toast mit Käse und Belag wird schnell etwas Warmes."});
+  if(hasAny("wraps","tortilla") && hasAny("käse","salat","hähnchen","hackfleisch","tomaten")) ideas.push({name:"Gefüllte Wraps", why:"Die Zutaten passen gut für schnelle Wraps oder Quesadillas."});
+  if(hasAny("salat","gurke","tomaten","feta","mozzarella")) ideas.push({name:"Großer Salat-Teller", why:"Frische Zutaten passen gut als leichter Salat oder Beilage."});
+  if(hasAll("mehl","milch","eier")) ideas.push({name:"Pfannkuchen", why:"Mehl, Milch und Eier sind direkt die Basis dafür."});
+  if(hasAny("bohnen","mais","tomaten") && hasAny("reis","wraps")) ideas.push({name:"Mexikanische Pfanne", why:"Bohnen, Mais und Tomaten passen gut für eine würzige Resteküche."});
+
   if(!ideas.length){
-    ideas.push({name:"Restepfanne", why:"Viele Zutaten lassen sich mit Gewürzen und Käse gut in einer Pfanne kombinieren."});
-    ideas.push({name:"Nudel- oder Reisgericht", why:"Reste passen oft gut zu Nudeln oder Reis."});
+    ideas.push({name:"Restepfanne", why:"Mit deinen Zutaten passt wahrscheinlich eine Pfanne mit Gewürzen und Käse."});
+    ideas.push({name:"Nudel- oder Reisgericht", why:"Viele Zutaten lassen sich schnell mit Nudeln oder Reis kombinieren."});
+    ideas.push({name:"Ofenauflauf", why:"Verschiedene Reste lassen sich gut mit Käse überbacken."});
   }
-  return ideas.slice(0,5);
+
+  return ideas.slice(0, 6);
 }
 
 function parseQuickShop(text){
-  const parts = normalize(text).split(" ");
-  if(parts.length === 1) return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
+  const parts = normalize(text).split(/\s+/);
+  if(parts.length <= 1) return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
+
   const maybeAmount = parts[parts.length-2];
   const maybeUnit = parts[parts.length-1];
+
   if(!Number.isNaN(parseNumber(maybeAmount))){
     return {
       name: normalize(parts.slice(0, -2).join(" ")),
@@ -328,6 +336,7 @@ function parseQuickShop(text){
       fresh: false
     };
   }
+
   return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
 }
 
@@ -362,6 +371,19 @@ function smartWeekPool(){
     if(lastTokens.length > 2) lastTokens.shift();
   }
   return result.length === 7 ? result : DAYS.map((_,i) => result[i] || "");
+}
+
+function getAvailableIngredientInput(){
+  const entered = document.getElementById("ideaInput").value
+    .toLowerCase()
+    .split("\n")
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  const stock = (state.stock || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
+  const freezer = (state.freezer || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
+  const all = [...new Set([...entered, ...stock, ...freezer])];
+  return all;
 }
 
 window.setPersons = async function(v){
@@ -520,36 +542,32 @@ window.addShop = async function(){
   renderShop();
 };
 
-window.editShop = async function(id){
+window.saveInlineManualShop = async function(id, text){
   const item = state.shopping.find(x => x.id === id);
   if(!item) return;
-  const name = prompt("Artikel", item.name);
-  if(name === null) return;
-  const amount = prompt("Menge", item.amount || "");
-  if(amount === null) return;
-  const unit = prompt("Einheit / Stück", item.unit || "");
-  if(unit === null) return;
-  item.name = normalize(name);
-  item.amount = normalize(amount);
-  item.unit = normalize(unit);
+  const parsed = parseQuickShop(text);
+  item.name = parsed.name;
+  item.amount = parsed.amount;
+  item.unit = parsed.unit;
+  await save();
+  renderShop();
+};
+
+window.saveInlineAutoShop = async function(key, text, area, fresh){
+  const parsed = parseQuickShop(text);
+  state.shoppingEdits[key] = {
+    name: parsed.name,
+    amount: parsed.amount,
+    unit: parsed.unit,
+    area: area || "Sonstiges",
+    fresh: !!fresh
+  };
   await save();
   renderShop();
 };
 
 window.deleteShop = async function(id){
   state.shopping = state.shopping.filter(x => x.id !== id);
-  await save();
-  renderShop();
-};
-
-window.editAutoItem = async function(key, currentName, currentAmount, currentUnit){
-  const name = prompt("Artikel", currentName || "");
-  if(name === null) return;
-  const amount = prompt("Menge", currentAmount || "");
-  if(amount === null) return;
-  const unit = prompt("Einheit / Stück", currentUnit || "");
-  if(unit === null) return;
-  state.shoppingEdits[key] = { name: normalize(name), amount: normalize(amount), unit: normalize(unit) };
   await save();
   renderShop();
 };
@@ -628,7 +646,7 @@ window.deleteFreeze = async function(id){
 };
 
 window.findIdeas = function(){
-  const input = document.getElementById("ideaInput").value.toLowerCase().split("\n").map(x => x.trim()).filter(Boolean);
+  const input = getAvailableIngredientInput();
   const box = document.getElementById("ideaResults");
   box.innerHTML = "";
 
@@ -636,6 +654,11 @@ window.findIdeas = function(){
     box.innerHTML = '<div class="empty">Bitte zuerst Zutaten eingeben.</div>';
     return;
   }
+
+  const sourceDiv = document.createElement("div");
+  sourceDiv.className = "box";
+  sourceDiv.innerHTML = `<div class="title">Berücksichtigte Zutaten</div><div class="meta">${escapeHtml(input.join(", "))}</div>`;
+  box.appendChild(sourceDiv);
 
   const savedMatches = state.dishes.map(d => {
     const score = (d.ingredients || []).filter(i => input.includes(i.name.toLowerCase())).length;
@@ -650,7 +673,7 @@ window.findIdeas = function(){
     title.innerHTML = `<div class="title">Passende gespeicherte Gerichte</div><div class="meta">Zuerst werden deine eigenen Rezepte vorgeschlagen.</div>`;
     box.appendChild(title);
 
-    savedMatches.slice(0,5).forEach(item => {
+    savedMatches.slice(0,6).forEach(item => {
       const div = document.createElement("div");
       div.className = "recipehint";
       div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)} ${item.dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
@@ -663,7 +686,7 @@ window.findIdeas = function(){
   const aiIdeas = aiRecipeIdeasFromIngredients(input);
   const aiHeader = document.createElement("div");
   aiHeader.className = "box";
-  aiHeader.innerHTML = `<div class="title">KI-Zusatz-Ideen</div><div class="meta">Diese Vorschläge werden direkt aus deinen Zutaten abgeleitet.</div>`;
+  aiHeader.innerHTML = `<div class="title">Bessere KI-Ideen</div><div class="meta">Diese Vorschläge werden direkt aus deinen heutigen Zutaten, deinem Vorrat und dem Gefrierschrank abgeleitet.</div>`;
   box.appendChild(aiHeader);
 
   aiIdeas.forEach(idea => {
@@ -794,21 +817,35 @@ function renderShop(){
     const areaDiv = document.createElement("div");
     areaDiv.className = "box";
     areaDiv.innerHTML = `<div class="title">${escapeHtml(area)}</div>`;
+
     groups[area].forEach(item => {
       const override = item.auto ? (state.shoppingEdits[item.key] || null) : null;
       const finalItem = override ? { ...item, ...override } : item;
-      const label = [finalItem.amount, finalItem.unit].filter(Boolean).join(" ");
+      const line = [finalItem.name, finalItem.amount, finalItem.unit].filter(Boolean).join(" ");
+
       const row = document.createElement("div");
-      row.className = "simpleitem";
+      row.className = "shopbox";
       row.style.marginTop = "8px";
-      row.innerHTML = `<span>${escapeHtml(finalItem.name)}${label ? " – " + escapeHtml(label) : ""}${item.auto ? " (auto)" : ""}${finalItem.fresh ? ' <span class="pill pill-fresh">frisch</span>' : ''}</span>
-        <div class="actions">${
-          item.auto
-            ? `<button class="soft small" onclick="editAutoItem('${item.key}','${escapeHtml(finalItem.name)}','${escapeHtml(finalItem.amount || "")}','${escapeHtml(finalItem.unit || "")}')">Ändern</button>`
-            : `<button class="soft small" onclick="editShop('${item.id}')">Ändern</button><button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`
-        }</div>`;
+      row.innerHTML = `
+        <div class="shop-head">
+          <div>
+            <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
+            <div class="small-note">${item.auto ? 'Direkt hier ändern und Enter drücken oder raus tippen.' : 'Direkt hier ändern und Enter drücken oder raus tippen.'}</div>
+          </div>
+          <div class="actions">
+            ${item.auto ? '' : `<button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}
+          </div>
+        </div>
+        <div
+          class="shop-edit"
+          contenteditable="true"
+          onkeydown="${item.auto ? `if(event.key==='Enter'){event.preventDefault();saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})}` : `if(event.key==='Enter'){event.preventDefault();saveInlineManualShop('${item.id}', this.innerText)}`}"
+          onblur="${item.auto ? `saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})` : `saveInlineManualShop('${item.id}', this.innerText)`}"
+        >${escapeHtml(line)}</div>
+      `;
       areaDiv.appendChild(row);
     });
+
     box.appendChild(areaDiv);
   });
 }
