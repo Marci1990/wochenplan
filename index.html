@@ -1,137 +1,184 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Familie Hanst Wochenplan</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-
-body{
-font-family:Arial;
-background:#f7f7ff;
-padding:20px;
-}
-
-.card{
-background:white;
-padding:20px;
-border-radius:12px;
-margin-bottom:20px;
-}
-
-button{
-background:#ef5f95;
-border:none;
-color:white;
-padding:10px 15px;
-border-radius:8px;
-cursor:pointer;
-}
-
-input{
-padding:10px;
-border-radius:8px;
-border:1px solid #ddd;
-}
-
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Familie Hanst Wochenplan</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body{
+      font-family:Arial,sans-serif;
+      background:#f7f7ff;
+      padding:20px;
+      margin:0;
+    }
+    .card{
+      background:white;
+      padding:20px;
+      border-radius:12px;
+      margin-bottom:20px;
+    }
+    button{
+      background:#ef5f95;
+      border:none;
+      color:white;
+      padding:12px 16px;
+      border-radius:8px;
+      cursor:pointer;
+    }
+    input{
+      padding:12px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      min-width:220px;
+    }
+    ul{
+      padding-left:20px;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .status{
+      color:#666;
+      margin-top:10px;
+      font-size:14px;
+    }
+  </style>
 </head>
-
 <body>
 
-<h1>💛 Familie Hanst Wochenplan</h1>
+  <h1>💛 Familie Hanst Wochenplan</h1>
 
-<div class="card">
-<h2>Gericht hinzufügen</h2>
+  <div class="card">
+    <h2>Gericht hinzufügen</h2>
+    <div class="row">
+      <input id="dishInput" placeholder="Gericht" />
+      <button id="addBtn" type="button">Hinzufügen</button>
+    </div>
+    <div id="status" class="status">Bereit</div>
+  </div>
 
-<input id="dishInput" placeholder="Gericht">
-<button onclick="addDish()">Hinzufügen</button>
+  <div class="card">
+    <h2>Gerichte</h2>
+    <ul id="dishList"></ul>
+  </div>
 
-</div>
+  <script>
+    const supabaseUrl = "https://rtcutlvjjxmgzyavjjm.supabase.co";
+    const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-<div class="card">
-<h2>Gerichte</h2>
-<ul id="dishList"></ul>
-</div>
+    const APP_STATE_ID = "familie-hanst-main";
+    let dishes = [];
 
-<script>
+    function setStatus(text){
+      document.getElementById("status").textContent = text;
+    }
 
-const supabaseUrl = "https://rtcutlvjjxzmgzyavjjm.supabase.co"
-const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o"
+    function render(){
+      const list = document.getElementById("dishList");
+      list.innerHTML = "";
 
-const supabase = window.supabase.createClient(supabaseUrl,supabaseKey)
+      dishes.forEach((dish, index) => {
+        const li = document.createElement("li");
+        li.textContent = dish;
 
-const APP_STATE_ID="familie-hanst-main"
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Löschen";
+        delBtn.style.marginLeft = "10px";
+        delBtn.style.padding = "6px 10px";
+        delBtn.style.fontSize = "12px";
+        delBtn.addEventListener("click", async () => {
+          dishes.splice(index, 1);
+          render();
+          await saveData();
+        });
 
-let dishes=[]
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
 
-async function saveData(){
+    async function saveData(){
+      setStatus("Speichere ...");
 
-const payload={dishes}
+      const payload = { dishes };
 
-await supabase
-.from("app_state")
-.upsert({
-id:APP_STATE_ID,
-data:payload,
-updated_at:new Date().toISOString()
-})
+      const { error } = await supabase
+        .from("app_state")
+        .upsert(
+          [
+            {
+              id: APP_STATE_ID,
+              data: payload,
+              updated_at: new Date().toISOString()
+            }
+          ],
+          { onConflict: "id" }
+        );
 
-}
+      if (error) {
+        console.error("saveData error:", error);
+        setStatus("Fehler beim Speichern: " + error.message);
+        return;
+      }
 
-async function loadData(){
+      setStatus("Gespeichert ✅");
+    }
 
-const {data}=await supabase
-.from("app_state")
-.select("data")
-.eq("id",APP_STATE_ID)
-.maybeSingle()
+    async function loadData(){
+      setStatus("Lade ...");
 
-if(data && data.data){
-dishes=data.data.dishes || []
-render()
-}
+      const { data, error } = await supabase
+        .from("app_state")
+        .select("data")
+        .eq("id", APP_STATE_ID)
+        .maybeSingle();
 
-}
+      if (error) {
+        console.error("loadData error:", error);
+        setStatus("Fehler beim Laden: " + error.message);
+        return;
+      }
 
-function addDish(){
+      if (data && data.data && Array.isArray(data.data.dishes)) {
+        dishes = data.data.dishes;
+      } else {
+        dishes = [];
+      }
 
-const input=document.getElementById("dishInput")
+      render();
+      setStatus("Geladen ✅");
+    }
 
-if(!input.value)return
+    async function addDish(){
+      const input = document.getElementById("dishInput");
+      const name = input.value.trim();
 
-dishes.push(input.value)
+      if (!name) return;
 
-input.value=""
+      dishes.push(name);
+      input.value = "";
+      render();
+      await saveData();
+    }
 
-render()
-saveData()
+    document.getElementById("addBtn").addEventListener("click", addDish);
 
-}
+    document.getElementById("dishInput").addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        await addDish();
+      }
+    });
 
-function render(){
-
-const list=document.getElementById("dishList")
-
-list.innerHTML=""
-
-dishes.forEach(d=>{
-
-const li=document.createElement("li")
-li.textContent=d
-
-list.appendChild(li)
-
-})
-
-}
-
-loadData()
-
-</script>
+    window.addEventListener("DOMContentLoaded", async () => {
+      await loadData();
+    });
+  </script>
 
 </body>
 </html>
