@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Familie Hanst Wochenplan</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body{
       font-family:Arial,sans-serif;
@@ -17,6 +16,7 @@
       padding:20px;
       border-radius:12px;
       margin-bottom:20px;
+      box-shadow:0 4px 16px rgba(0,0,0,.06);
     }
     button{
       background:#ef5f95;
@@ -32,19 +32,24 @@
       border:1px solid #ddd;
       min-width:220px;
     }
-    ul{
-      padding-left:20px;
-    }
     .row{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
       align-items:center;
     }
-    .status{
-      color:#666;
-      margin-top:10px;
-      font-size:14px;
+    ul{
+      padding-left:20px;
+    }
+    .day{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .day strong{
+      min-width:120px;
     }
   </style>
 </head>
@@ -55,10 +60,9 @@
   <div class="card">
     <h2>Gericht hinzufügen</h2>
     <div class="row">
-      <input id="dishInput" placeholder="Gericht" />
+      <input id="dishInput" placeholder="Gericht">
       <button id="addBtn" type="button">Hinzufügen</button>
     </div>
-    <div id="status" class="status">Bereit</div>
   </div>
 
   <div class="card">
@@ -66,35 +70,59 @@
     <ul id="dishList"></ul>
   </div>
 
+  <div class="card">
+    <h2>Wochenplan</h2>
+    <button id="randomBtn" type="button">🎲 Zufallsplan</button>
+    <div style="margin-top:16px;" id="weekBox"></div>
+  </div>
+
   <script>
-    const supabaseUrl = "https://rtcutlvjjxmgzyavjjm.supabase.co";
-    const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const STORAGE_KEY = "familie_hanst_wochenplan_v1";
+    const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 
-    const APP_STATE_ID = "familie-hanst-main";
     let dishes = [];
+    let week = Array(7).fill("");
 
-    function setStatus(text){
-      document.getElementById("status").textContent = text;
+    function saveData(){
+      const payload = { dishes, week };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     }
 
-    function render(){
+    function loadData(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return;
+        const data = JSON.parse(raw);
+        dishes = Array.isArray(data.dishes) ? data.dishes : [];
+        week = Array.isArray(data.week) && data.week.length === 7 ? data.week : Array(7).fill("");
+      }catch(e){
+        dishes = [];
+        week = Array(7).fill("");
+      }
+    }
+
+    function renderDishes(){
       const list = document.getElementById("dishList");
       list.innerHTML = "";
 
+      if(!dishes.length){
+        list.innerHTML = "<li>Noch keine Gerichte.</li>";
+        return;
+      }
+
       dishes.forEach((dish, index) => {
         const li = document.createElement("li");
-        li.textContent = dish;
+        li.textContent = dish + " ";
 
         const delBtn = document.createElement("button");
         delBtn.textContent = "Löschen";
-        delBtn.style.marginLeft = "10px";
         delBtn.style.padding = "6px 10px";
         delBtn.style.fontSize = "12px";
-        delBtn.addEventListener("click", async () => {
+        delBtn.addEventListener("click", () => {
           dishes.splice(index, 1);
+          week = week.map(x => x === dish ? "" : x);
+          saveData();
           render();
-          await saveData();
         });
 
         li.appendChild(delBtn);
@@ -102,82 +130,70 @@
       });
     }
 
-    async function saveData(){
-      setStatus("Speichere ...");
+    function renderWeek(){
+      const box = document.getElementById("weekBox");
+      box.innerHTML = "";
 
-      const payload = { dishes };
+      DAYS.forEach((day, i) => {
+        const row = document.createElement("div");
+        row.className = "day";
 
-      const { error } = await supabase
-        .from("app_state")
-        .upsert(
-          [
-            {
-              id: APP_STATE_ID,
-              data: payload,
-              updated_at: new Date().toISOString()
-            }
-          ],
-          { onConflict: "id" }
-        );
+        const label = document.createElement("strong");
+        label.textContent = day;
 
-      if (error) {
-        console.error("saveData error:", error);
-        setStatus("Fehler beim Speichern: " + error.message);
-        return;
-      }
+        const input = document.createElement("input");
+        input.value = week[i] || "";
+        input.placeholder = "Gericht";
+        input.addEventListener("input", (e) => {
+          week[i] = e.target.value;
+          saveData();
+        });
 
-      setStatus("Gespeichert ✅");
+        row.appendChild(label);
+        row.appendChild(input);
+        box.appendChild(row);
+      });
     }
 
-    async function loadData(){
-      setStatus("Lade ...");
-
-      const { data, error } = await supabase
-        .from("app_state")
-        .select("data")
-        .eq("id", APP_STATE_ID)
-        .maybeSingle();
-
-      if (error) {
-        console.error("loadData error:", error);
-        setStatus("Fehler beim Laden: " + error.message);
-        return;
-      }
-
-      if (data && data.data && Array.isArray(data.data.dishes)) {
-        dishes = data.data.dishes;
-      } else {
-        dishes = [];
-      }
-
-      render();
-      setStatus("Geladen ✅");
-    }
-
-    async function addDish(){
+    function addDish(){
       const input = document.getElementById("dishInput");
       const name = input.value.trim();
-
-      if (!name) return;
+      if(!name) return;
 
       dishes.push(name);
       input.value = "";
+      saveData();
       render();
-      await saveData();
+    }
+
+    function randomWeek(){
+      if(!dishes.length){
+        alert("Bitte zuerst Gerichte anlegen.");
+        return;
+      }
+
+      week = DAYS.map(() => dishes[Math.floor(Math.random() * dishes.length)]);
+      saveData();
+      renderWeek();
+    }
+
+    function render(){
+      renderDishes();
+      renderWeek();
     }
 
     document.getElementById("addBtn").addEventListener("click", addDish);
+    document.getElementById("randomBtn").addEventListener("click", randomWeek);
 
-    document.getElementById("dishInput").addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
+    document.getElementById("dishInput").addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){
         e.preventDefault();
-        await addDish();
+        addDish();
       }
     });
 
-    window.addEventListener("DOMContentLoaded", async () => {
-      await loadData();
-    });
+    loadData();
+    render();
   </script>
 
 </body>
