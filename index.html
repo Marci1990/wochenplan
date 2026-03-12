@@ -1,235 +1,883 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Familie Hanst Wochenplan V10</title>
-
-<style>
-body{font-family:Arial;background:#f7f7ff;margin:0;padding:20px}
-h1{margin-top:0}
-.card{background:white;padding:20px;margin-bottom:20px;border-radius:12px}
-button{background:#ef5f95;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
-button.small{padding:4px 8px;font-size:12px}
-input,textarea{padding:8px;margin:5px;width:100%}
-.list div{margin-bottom:8px;padding:6px;border-bottom:1px solid #eee}
-.fav{color:#d88b00;font-weight:bold}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💛 Familie Hanst Wochenplan V11</title>
+  <style>
+    :root{
+      --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
+      --border:#ead7e2; --primary:#ef5f95; --primary-dark:#df4c84; --secondary:#eef2ff;
+      --danger:#ffe3e6; --danger-text:#a61b3b; --success:#e8fff1; --success-text:#176a47;
+      --fresh:#fff7e8; --hint:#fff4e8; --fav:#fff6cf; --shadow:0 8px 24px rgba(0,0,0,.06);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text)}
+    .wrap{max-width:1280px;margin:0 auto;padding:18px}
+    .hero{background:linear-gradient(135deg,#ff8fb0,#ff6d97 60%,#8d9cff);color:#fff;border-radius:24px;padding:22px;margin-bottom:16px;box-shadow:var(--shadow)}
+    .hero h1{margin:0 0 8px}.hero p{margin:0;opacity:.95}
+    .status,.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:980px){.grid,.grid2{grid-template-columns:1fr}}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    input,textarea,select,button{font:inherit;border-radius:12px}
+    input,textarea,select{width:100%;padding:11px 12px;border:1px solid var(--border);background:#fff}
+    textarea{min-height:96px;resize:vertical}
+    button{border:none;padding:10px 14px;cursor:pointer;font-weight:700;background:var(--primary);color:#fff}
+    button:hover{background:var(--primary-dark)}
+    button.soft{background:var(--secondary);color:#28324a}
+    button.danger{background:var(--danger);color:var(--danger-text)}
+    button.success{background:var(--success);color:var(--success-text)}
+    button.small{padding:6px 10px;font-size:13px}
+    .grow{flex:1;min-width:180px}.w110{width:110px}.w120{width:120px}.w140{width:140px}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .box,.weekrow,.simpleitem,.recipehint{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
+    .weekrow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:start}
+    @media (max-width:700px){.weekrow{grid-template-columns:1fr}}
+    .daycontent{display:flex;flex-direction:column;gap:8px}
+    .title{font-weight:700}.meta{color:var(--muted);font-size:14px;white-space:pre-wrap;margin-top:6px}
+    .hint{background:var(--hint);border:1px solid #ffd8b0;color:#9b5e00;border-radius:10px;padding:6px 8px;margin:8px 0;font-size:14px}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12px;margin-left:6px;background:#fff}
+    .pill-fav{background:var(--fav);border-color:#eed27a;color:#8e6b00}
+    .pill-fresh{background:var(--fresh);border-color:#ffd285;color:#975e00}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
+    .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
+    .section-title{margin-bottom:8px}
+    .tag{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#f7f7fb;border:1px solid var(--border);margin-right:6px;margin-top:6px}
+    .supermarket{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+  </style>
 </head>
-
 <body>
+<div class="wrap">
+  <section class="hero">
+    <h1>💛 Familie Hanst Wochenplan</h1>
+    <p>Luxus Edition mit Firebase, Favoriten, smarter Wochenplanung, Supermarkt-Sortierung und KI-Ideen aus Zutaten.</p>
+  </section>
 
-<h1>💛 Familie Hanst Wochenplan</h1>
+  <div id="status" class="status">Verbinde mit Firebase…</div>
 
-<div class="card">
-<h3>Gericht hinzufügen</h3>
-<input id="dishName" placeholder="Gericht">
-<textarea id="dishIngredients" placeholder="Zutaten (eine pro Zeile)"></textarea>
-<button onclick="addDish()">Speichern</button>
+  <div class="card">
+    <div class="row">
+      <button onclick="smartWeek()">🧠 Intelligenter Wochenplan</button>
+      <button onclick="randomWeek()">🎲 Zufallsplan</button>
+      <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
+      <button class="soft" onclick="loadExamples()">Beispiele laden</button>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:700;">Personen
+        <select id="servingsSelect" style="width:auto;" onchange="setPersons(this.value)">
+          <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2 class="section-title">Gericht hinzufügen / bearbeiten</h2>
+      <input id="dishName" placeholder="Gericht">
+      <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile:
+Name|Menge|Einheit|Bereich|frisch
+
+Beispiel:
+Hackfleisch|500|g|Fleisch & Fisch|frisch
+Tomatensoße|2|Gläser|Trockenwaren|
+Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
+      <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
+      <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
+      <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
+      <input id="dishImageFile" type="file" accept="image/*">
+      <div class="row">
+        <button id="saveDishBtn" onclick="addDish()">Speichern</button>
+        <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Wochenplan</h2>
+      <div id="week" class="list"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2 class="section-title">Gespeicherte Gerichte</h2>
+      <input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()">
+      <div id="dishList" class="list" style="margin-top:10px"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Einkaufsliste</h2>
+      <div class="small-note">Automatisch aus dem Wochenplan. Gleiche Zutaten werden zusammengefasst. Du kannst auch automatisch erzeugte Artikel bearbeiten.</div>
+      <div class="row" style="margin-top:12px">
+        <input id="shopQuick" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
+      </div>
+      <div class="row">
+        <input id="shopName" class="grow" placeholder="Artikel">
+        <input id="shopAmount" class="w110" placeholder="Menge">
+        <input id="shopUnit" class="w110" placeholder="Einheit / Stück">
+      </div>
+      <div class="row">
+        <select id="shopArea" class="grow">
+          <option>Obst & Gemüse</option>
+          <option>Kühlregal</option>
+          <option>Fleisch & Fisch</option>
+          <option>Tiefkühl</option>
+          <option>Trockenwaren</option>
+          <option>Gewürze</option>
+          <option>Getränke</option>
+          <option>Bäckerei</option>
+          <option selected>Sonstiges</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
+        <button onclick="addShop()">Hinzufügen</button>
+      </div>
+      <div id="shopList" class="list"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2 class="section-title">Vorrat</h2>
+      <div class="small-note">Wird automatisch von der Einkaufsliste abgezogen.</div>
+      <div class="row" style="margin-top:12px">
+        <input id="stockName" class="grow" placeholder="Artikel">
+        <input id="stockAmount" class="w110" placeholder="Menge">
+        <input id="stockUnit" class="w110" placeholder="Einheit / Stück">
+        <button onclick="addStock()">Hinzufügen</button>
+      </div>
+      <div id="stockList" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Gefrierschrank</h2>
+      <div class="small-note">Hier kannst du eingefrorene Sachen eintragen und den Überblick behalten.</div>
+      <div class="row" style="margin-top:12px">
+        <input id="freezeName" class="grow" placeholder="z.B. Hackfleisch, Suppe, Brot">
+        <input id="freezeAmount" class="w110" placeholder="Menge">
+        <input id="freezeUnit" class="w110" placeholder="Einheit / Stück">
+        <button onclick="addFreeze()">Hinzufügen</button>
+      </div>
+      <div id="freezeList" class="list"></div>
+    </section>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Was kann ich heute aus folgenden Zutaten kochen?</h2>
+    <div class="small-note">Nutzt zuerst deine gespeicherten Gerichte und ergänzt dann intelligente Vorschläge direkt aus den Zutaten – ohne Google oder Chefkoch.</div>
+    <textarea id="ideaInput" placeholder="z.B.
+Tomaten
+Nudeln
+Zwiebeln
+Hackfleisch"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button onclick="findIdeas()">Vorschläge anzeigen</button>
+      <button class="soft" onclick="clearIdeas()">Leeren</button>
+    </div>
+    <div id="ideaResults" class="list"></div>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Rezeptsuche</h2>
+    <div class="row">
+      <input id="searchName" class="grow" placeholder="z.B. Lasagne">
+      <button class="soft" onclick="searchGoogle()">Google</button>
+      <button class="soft" onclick="searchChef()">Chefkoch</button>
+      <button class="soft" onclick="searchThermo()">Thermomix</button>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-<h3>Gespeicherte Gerichte</h3>
-<div id="dishList" class="list"></div>
-</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<div class="card">
-<h3>Was kann ich heute aus folgenden Zutaten kochen?</h3>
-<textarea id="ideaInput" placeholder="z.B. Eier, Käse, Tomaten"></textarea>
-<button onclick="findIdeas()">Vorschläge anzeigen</button>
-<div id="ideaResults"></div>
-</div>
+const firebaseConfig = {
+  apiKey:"AIzaSyBl3-LMbx6tL5j96sjYvUMXpSF3D8iwS0I",
+  authDomain:"wochenplan-hast.firebaseapp.com",
+  projectId:"wochenplan-hast",
+  storageBucket:"wochenplan-hast.firebasestorage.app",
+  messagingSenderId:"909844114392",
+  appId:"1:909844114392:web:5554d7fad278c6ce5da0ad"
+};
 
-<div class="card">
-<h3>Einkaufsliste</h3>
-<input id="shopQuick" placeholder="Artikel schnell hinzufügen (z.B. Tomaten 4 Stück)" onkeydown="quickAdd(event)">
-<div id="shopList"></div>
-</div>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const ref = doc(db, "apps", "familie-hanst-v11");
+const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
+const AREA_TO_SUPERMARKET = {
+  "Obst & Gemüse":"Obst & Gemüse",
+  "Kühlregal":"Kühlregal",
+  "Fleisch & Fisch":"Fleisch & Fisch",
+  "Tiefkühl":"Tiefkühl",
+  "Trockenwaren":"Trockenwaren",
+  "Gewürze":"Trockenwaren",
+  "Getränke":"Getränke",
+  "Bäckerei":"Bäckerei",
+  "Sonstiges":"Sonstiges"
+};
 
-<script>
+let state = {
+  dishes: [],
+  week: ["","","","","","",""],
+  servings: 2,
+  shopping: [],
+  stock: [],
+  freezer: [],
+  shoppingEdits: {},
+  editIndex: null
+};
 
-let state={
-dishes:[],
-shopping:[]
+const normalize = t => String(t || "").trim();
+const escapeHtml = t => String(t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const parseNumber = v => parseFloat(String(v).replace(",", "."));
+const isNumeric = v => !Number.isNaN(parseNumber(v));
+const updateStatus = t => document.getElementById("status").textContent = t;
+
+function save(){ return setDoc(ref, state); }
+
+function scaleAmount(amount){
+  if(amount === "" || amount == null) return "";
+  const n = parseNumber(amount);
+  if(Number.isNaN(n)) return amount;
+  const s = Math.round((n * (state.servings / 2)) * 100) / 100;
+  return String(s).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1");
 }
 
-function save(){
-localStorage.setItem("hanst_plan",JSON.stringify(state))
+function parseIngredients(text){
+  return text.split("\n").map(x => x.trim()).filter(Boolean).map(line => {
+    const p = line.split("|").map(x => x.trim());
+    return {
+      name: normalize(p[0] || ""),
+      amount: normalize(p[1] || ""),
+      unit: normalize(p[2] || ""),
+      area: AREAS.includes(normalize(p[3] || "")) ? normalize(p[3]) : "Sonstiges",
+      fresh: normalize(p[4] || "").toLowerCase() === "frisch"
+    };
+  }).filter(x => x.name);
 }
 
-function load(){
-const d=localStorage.getItem("hanst_plan")
-if(d)state=JSON.parse(d)
+function ingredientsToText(items){
+  return (items || []).map(i => [i.name, i.amount, i.unit, i.area, i.fresh ? "frisch" : ""].join("|")).join("\n");
 }
 
-function addDish(){
-
-const name=document.getElementById("dishName").value.trim()
-const ing=document.getElementById("dishIngredients").value.split("\n").filter(x=>x)
-
-if(!name)return
-
-state.dishes.push({
-name:name,
-ingredients:ing,
-fav:false
-})
-
-document.getElementById("dishName").value=""
-document.getElementById("dishIngredients").value=""
-
-save()
-render()
+function ingredientLabel(i){
+  const qty = [scaleAmount(i.amount), i.unit].filter(Boolean).join(" ");
+  return qty ? `${i.name} (${qty})` : i.name;
 }
 
-function toggleFav(i){
-state.dishes[i].fav=!state.dishes[i].fav
-save()
-render()
+function stockMatch(item){
+  return state.stock.find(s =>
+    s.name.toLowerCase() === item.name.toLowerCase() &&
+    (s.unit || "").toLowerCase() === (item.unit || "").toLowerCase()
+  );
 }
 
-function render(){
-
-const box=document.getElementById("dishList")
-box.innerHTML=""
-
-state.dishes.forEach((d,i)=>{
-
-const div=document.createElement("div")
-
-div.innerHTML=`
-${d.fav?"⭐":""}<b>${d.name}</b>
-<button class="small" onclick="toggleFav(${i})">Favorit</button>
-`
-
-box.appendChild(div)
-
-})
-
-renderShop()
-
+function uniqueByNameUnit(items){
+  const map = new Map();
+  items.forEach(item => {
+    const key = (item.name || "").toLowerCase() + "|" + (item.unit || "").toLowerCase();
+    if(!map.has(key)){
+      map.set(key, {...item});
+    } else {
+      const existing = map.get(key);
+      if(isNumeric(existing.amount) && isNumeric(item.amount)){
+        existing.amount = String(parseNumber(existing.amount) + parseNumber(item.amount));
+      }
+      existing.fresh = existing.fresh || item.fresh;
+      map.set(key, existing);
+    }
+  });
+  return [...map.values()];
 }
 
-function quickAdd(e){
+function aiRecipeIdeasFromIngredients(ingredients){
+  const set = new Set(ingredients.map(x => x.toLowerCase()));
+  const ideas = [];
+  const hasAny = (...items) => items.some(i => set.has(i));
+  const hasAll = (...items) => items.every(i => set.has(i));
 
-if(e.key!="Enter")return
+  if(set.has("eier") && hasAny("käse","schinken","tomaten","zwiebeln")) ideas.push({name:"Omelette / Rührei-Variante", why:"Eier passen sehr gut mit Käse, Schinken, Tomaten oder Zwiebeln."});
+  if(hasAny("nudeln","spaghetti") && hasAny("tomaten","tomatensoße","passierte tomaten")) ideas.push({name:"Schnelle Tomaten-Nudeln", why:"Nudeln und Tomaten ergeben direkt ein schnelles Pasta-Gericht."});
+  if(hasAny("brot","toast") && hasAny("käse","schinken","salami")) ideas.push({name:"Überbackene Brote / Toasts", why:"Brot oder Toast mit Käse und Belag geht schnell."});
+  if(hasAny("kartoffeln") && hasAny("zwiebeln","eier","käse")) ideas.push({name:"Kartoffelpfanne", why:"Kartoffeln lassen sich super mit Ei, Zwiebeln oder Käse kombinieren."});
+  if(hasAny("reis") && hasAny("gemüse","erbsen","mais","paprika","zwiebeln","hähnchen")) ideas.push({name:"Reis-Pfanne", why:"Reis mit Gemüse oder Hähnchen ist eine einfache Resteküche-Idee."});
+  if(hasAny("wraps","tortilla") && hasAny("käse","salat","hähnchen","hackfleisch","tomaten")) ideas.push({name:"Wraps / Quesadillas", why:"Die Zutaten passen gut für schnelle gefüllte Wraps."});
+  if(hasAny("hackfleisch") && hasAny("nudeln","spaghetti","tomaten","tomatensoße")) ideas.push({name:"Hackfleisch-Pasta", why:"Hackfleisch mit Nudeln oder Tomaten passt sehr gut zusammen."});
+  if(hasAny("salat","gurke","tomaten","feta","mozzarella")) ideas.push({name:"Schneller Salat-Teller", why:"Frische Zutaten passen gut als leichter Salat."});
+  if(hasAny("mehl") && hasAny("milch","eier")) ideas.push({name:"Pfannkuchen / Crêpes", why:"Aus Mehl, Milch und Eiern lässt sich direkt etwas machen."});
+  if(!ideas.length){
+    ideas.push({name:"Restepfanne", why:"Viele Zutaten lassen sich mit Gewürzen und Käse gut in einer Pfanne kombinieren."});
+    ideas.push({name:"Nudel- oder Reisgericht", why:"Reste passen oft gut zu Nudeln oder Reis."});
+  }
+  return ideas.slice(0,5);
+}
 
-const val=document.getElementById("shopQuick").value.trim()
+function parseQuickShop(text){
+  const parts = normalize(text).split(" ");
+  if(parts.length === 1) return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
+  const maybeAmount = parts[parts.length-2];
+  const maybeUnit = parts[parts.length-1];
+  if(!Number.isNaN(parseNumber(maybeAmount))){
+    return {
+      name: normalize(parts.slice(0, -2).join(" ")),
+      amount: normalize(maybeAmount),
+      unit: normalize(maybeUnit),
+      area: "Sonstiges",
+      fresh: false
+    };
+  }
+  return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
+}
 
-if(!val)return
+function weightedDishPool(){
+  const pool = [];
+  state.dishes.forEach(d => {
+    pool.push(d);
+    if(d.favorite) pool.push(d, d, d);
+  });
+  return pool;
+}
 
-state.shopping.push(val)
+function smartWeekPool(){
+  const pool = weightedDishPool();
+  const result = [];
+  const lastTokens = [];
+  while(result.length < 7 && pool.length){
+    let tries = 0;
+    let candidate = null;
+    while(tries < 20){
+      const maybe = pool[Math.floor(Math.random()*pool.length)];
+      const token = maybe.name.toLowerCase().split(" ")[0];
+      if(!lastTokens.includes(token) || pool.length < 3){
+        candidate = maybe;
+        break;
+      }
+      tries++;
+    }
+    candidate = candidate || pool[Math.floor(Math.random()*pool.length)];
+    result.push(candidate.name);
+    lastTokens.push(candidate.name.toLowerCase().split(" ")[0]);
+    if(lastTokens.length > 2) lastTokens.shift();
+  }
+  return result.length === 7 ? result : DAYS.map((_,i) => result[i] || "");
+}
 
-document.getElementById("shopQuick").value=""
+window.setPersons = async function(v){
+  state.servings = parseInt(v, 10) || 2;
+  await save();
+  render();
+};
 
-save()
-renderShop()
+window.addDish = async function(){
+  const name = normalize(document.getElementById("dishName").value);
+  const hint = normalize(document.getElementById("dishHint").value);
+  const imageUrl = normalize(document.getElementById("dishImageUrl").value);
+  const favorite = document.getElementById("dishFavorite").checked;
+  const ingredients = parseIngredients(document.getElementById("dishIngredients").value);
+  const file = document.getElementById("dishImageFile").files[0];
+  if(!name) return;
 
+  const finish = async (img) => {
+    const dish = { name, hint, image: img || imageUrl || "", favorite, ingredients };
+    if(state.editIndex !== null){
+      const old = state.dishes[state.editIndex]?.name || "";
+      state.dishes[state.editIndex] = dish;
+      state.week = state.week.map(x => x === old ? name : x);
+      state.editIndex = null;
+      document.getElementById("saveDishBtn").textContent = "Speichern";
+      document.getElementById("cancelEditBtn").style.display = "none";
+    } else {
+      state.dishes.push(dish);
+    }
+    document.getElementById("dishName").value = "";
+    document.getElementById("dishIngredients").value = "";
+    document.getElementById("dishHint").value = "";
+    document.getElementById("dishImageUrl").value = "";
+    document.getElementById("dishImageFile").value = "";
+    document.getElementById("dishFavorite").checked = false;
+    await save();
+    render();
+  };
+
+  if(file){
+    const reader = new FileReader();
+    reader.onload = async e => { await finish(e.target.result); };
+    reader.readAsDataURL(file);
+  } else {
+    await finish("");
+  }
+};
+
+window.editDish = function(i){
+  const dish = state.dishes[i];
+  if(!dish) return;
+  document.getElementById("dishName").value = dish.name || "";
+  document.getElementById("dishIngredients").value = ingredientsToText(dish.ingredients || []);
+  document.getElementById("dishHint").value = dish.hint || "";
+  document.getElementById("dishImageUrl").value = dish.image && !String(dish.image).startsWith("data:") ? dish.image : "";
+  document.getElementById("dishImageFile").value = "";
+  document.getElementById("dishFavorite").checked = !!dish.favorite;
+  state.editIndex = i;
+  document.getElementById("saveDishBtn").textContent = "Änderungen speichern";
+  document.getElementById("cancelEditBtn").style.display = "inline-block";
+  window.scrollTo({top:0, behavior:"smooth"});
+};
+
+window.cancelEdit = function(){
+  state.editIndex = null;
+  document.getElementById("dishName").value = "";
+  document.getElementById("dishIngredients").value = "";
+  document.getElementById("dishHint").value = "";
+  document.getElementById("dishImageUrl").value = "";
+  document.getElementById("dishImageFile").value = "";
+  document.getElementById("dishFavorite").checked = false;
+  document.getElementById("saveDishBtn").textContent = "Speichern";
+  document.getElementById("cancelEditBtn").style.display = "none";
+};
+
+window.toggleFavorite = async function(i){
+  if(!state.dishes[i]) return;
+  state.dishes[i].favorite = !state.dishes[i].favorite;
+  await save();
+  renderDishes();
+};
+
+window.deleteDish = async function(i){
+  const removed = state.dishes[i];
+  if(!removed) return;
+  state.dishes.splice(i,1);
+  state.week = state.week.map(x => x === removed.name ? "" : x);
+  await save();
+  render();
+};
+
+window.randomWeek = async function(){
+  if(!state.dishes.length) return;
+  const pool = weightedDishPool();
+  state.week = DAYS.map(() => pool[Math.floor(Math.random()*pool.length)].name);
+  await save();
+  render();
+};
+
+window.smartWeek = async function(){
+  if(!state.dishes.length) return;
+  state.week = smartWeekPool();
+  await save();
+  render();
+};
+
+window.rollDay = async function(i){
+  if(!state.dishes.length) return;
+  const pool = weightedDishPool();
+  const dish = pool[Math.floor(Math.random()*pool.length)];
+  state.week[i] = dish.name;
+  await save();
+  renderWeek();
+  renderShop();
+};
+
+window.clearWeek = async function(){
+  state.week = ["","","","","","",""];
+  await save();
+  render();
+};
+
+window.updateDay = async function(i, val){
+  state.week[i] = val;
+  await save();
+  renderWeek();
+  renderShop();
+};
+
+window.quickAddShop = async function(e){
+  if(e.key !== "Enter") return;
+  e.preventDefault();
+  const text = normalize(document.getElementById("shopQuick").value);
+  if(!text) return;
+  const parsed = parseQuickShop(text);
+  state.shopping.push({ id: Date.now().toString(), ...parsed });
+  document.getElementById("shopQuick").value = "";
+  await save();
+  renderShop();
+};
+
+window.addShop = async function(){
+  const name = normalize(document.getElementById("shopName").value);
+  const amount = normalize(document.getElementById("shopAmount").value);
+  const unit = normalize(document.getElementById("shopUnit").value);
+  const area = normalize(document.getElementById("shopArea").value) || "Sonstiges";
+  const fresh = document.getElementById("shopFresh").checked;
+  if(!name) return;
+  state.shopping.push({ id: Date.now().toString(), name, amount, unit, area, fresh });
+  document.getElementById("shopName").value = "";
+  document.getElementById("shopAmount").value = "";
+  document.getElementById("shopUnit").value = "";
+  document.getElementById("shopArea").value = "Sonstiges";
+  document.getElementById("shopFresh").checked = false;
+  await save();
+  renderShop();
+};
+
+window.editShop = async function(id){
+  const item = state.shopping.find(x => x.id === id);
+  if(!item) return;
+  const name = prompt("Artikel", item.name);
+  if(name === null) return;
+  const amount = prompt("Menge", item.amount || "");
+  if(amount === null) return;
+  const unit = prompt("Einheit / Stück", item.unit || "");
+  if(unit === null) return;
+  item.name = normalize(name);
+  item.amount = normalize(amount);
+  item.unit = normalize(unit);
+  await save();
+  renderShop();
+};
+
+window.deleteShop = async function(id){
+  state.shopping = state.shopping.filter(x => x.id !== id);
+  await save();
+  renderShop();
+};
+
+window.editAutoItem = async function(key, currentName, currentAmount, currentUnit){
+  const name = prompt("Artikel", currentName || "");
+  if(name === null) return;
+  const amount = prompt("Menge", currentAmount || "");
+  if(amount === null) return;
+  const unit = prompt("Einheit / Stück", currentUnit || "");
+  if(unit === null) return;
+  state.shoppingEdits[key] = { name: normalize(name), amount: normalize(amount), unit: normalize(unit) };
+  await save();
+  renderShop();
+};
+
+window.addStock = async function(){
+  const name = normalize(document.getElementById("stockName").value);
+  const amount = normalize(document.getElementById("stockAmount").value);
+  const unit = normalize(document.getElementById("stockUnit").value);
+  if(!name) return;
+  state.stock.push({ id: Date.now().toString(), name, amount, unit });
+  document.getElementById("stockName").value = "";
+  document.getElementById("stockAmount").value = "";
+  document.getElementById("stockUnit").value = "";
+  await save();
+  renderStock();
+  renderShop();
+};
+
+window.editStock = async function(id){
+  const item = state.stock.find(x => x.id === id);
+  if(!item) return;
+  const name = prompt("Artikel", item.name);
+  if(name === null) return;
+  const amount = prompt("Menge", item.amount || "");
+  if(amount === null) return;
+  const unit = prompt("Einheit / Stück", item.unit || "");
+  if(unit === null) return;
+  item.name = normalize(name);
+  item.amount = normalize(amount);
+  item.unit = normalize(unit);
+  await save();
+  renderStock();
+  renderShop();
+};
+
+window.deleteStock = async function(id){
+  state.stock = state.stock.filter(x => x.id !== id);
+  await save();
+  renderStock();
+  renderShop();
+};
+
+window.addFreeze = async function(){
+  const name = normalize(document.getElementById("freezeName").value);
+  const amount = normalize(document.getElementById("freezeAmount").value);
+  const unit = normalize(document.getElementById("freezeUnit").value);
+  if(!name) return;
+  state.freezer.push({ id: Date.now().toString(), name, amount, unit });
+  document.getElementById("freezeName").value = "";
+  document.getElementById("freezeAmount").value = "";
+  document.getElementById("freezeUnit").value = "";
+  await save();
+  renderFreezer();
+};
+
+window.editFreeze = async function(id){
+  const item = state.freezer.find(x => x.id === id);
+  if(!item) return;
+  const name = prompt("Artikel", item.name);
+  if(name === null) return;
+  const amount = prompt("Menge", item.amount || "");
+  if(amount === null) return;
+  const unit = prompt("Einheit / Stück", item.unit || "");
+  if(unit === null) return;
+  item.name = normalize(name);
+  item.amount = normalize(amount);
+  item.unit = normalize(unit);
+  await save();
+  renderFreezer();
+};
+
+window.deleteFreeze = async function(id){
+  state.freezer = state.freezer.filter(x => x.id !== id);
+  await save();
+  renderFreezer();
+};
+
+window.findIdeas = function(){
+  const input = document.getElementById("ideaInput").value.toLowerCase().split("\n").map(x => x.trim()).filter(Boolean);
+  const box = document.getElementById("ideaResults");
+  box.innerHTML = "";
+
+  if(!input.length){
+    box.innerHTML = '<div class="empty">Bitte zuerst Zutaten eingeben.</div>';
+    return;
+  }
+
+  const savedMatches = state.dishes.map(d => {
+    const score = (d.ingredients || []).filter(i => input.includes(i.name.toLowerCase())).length;
+    const total = (d.ingredients || []).length || 1;
+    const missing = (d.ingredients || []).filter(i => !input.includes(i.name.toLowerCase())).map(i => i.name);
+    return { dish:d, score, total, missing };
+  }).filter(x => x.score > 0).sort((a,b) => b.score - a.score || a.missing.length - b.missing.length);
+
+  if(savedMatches.length){
+    const title = document.createElement("div");
+    title.className = "box";
+    title.innerHTML = `<div class="title">Passende gespeicherte Gerichte</div><div class="meta">Zuerst werden deine eigenen Rezepte vorgeschlagen.</div>`;
+    box.appendChild(title);
+
+    savedMatches.slice(0,5).forEach(item => {
+      const div = document.createElement("div");
+      div.className = "recipehint";
+      div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)} ${item.dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
+        <div class="meta">${item.score} von ${item.total} Zutaten passen</div>
+        ${item.missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(item.missing.join(", "))}</div>` : `<div class="meta">Passt komplett ✅</div>`}`;
+      box.appendChild(div);
+    });
+  }
+
+  const aiIdeas = aiRecipeIdeasFromIngredients(input);
+  const aiHeader = document.createElement("div");
+  aiHeader.className = "box";
+  aiHeader.innerHTML = `<div class="title">KI-Zusatz-Ideen</div><div class="meta">Diese Vorschläge werden direkt aus deinen Zutaten abgeleitet.</div>`;
+  box.appendChild(aiHeader);
+
+  aiIdeas.forEach(idea => {
+    const div = document.createElement("div");
+    div.className = "recipehint";
+    div.innerHTML = `<div class="title">${escapeHtml(idea.name)}</div><div class="meta">${escapeHtml(idea.why)}</div>`;
+    box.appendChild(div);
+  });
+};
+
+window.clearIdeas = function(){
+  document.getElementById("ideaInput").value = "";
+  document.getElementById("ideaResults").innerHTML = "";
+};
+
+window.searchGoogle = function(){
+  const q = normalize(document.getElementById("searchName").value);
+  if(q) window.open("https://www.google.com/search?q=" + encodeURIComponent(q + " rezept"), "_blank");
+};
+
+window.searchChef = function(){
+  const q = normalize(document.getElementById("searchName").value);
+  if(q) window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(q) + "/Rezepte.html", "_blank");
+};
+
+window.searchThermo = function(){
+  const q = normalize(document.getElementById("searchName").value);
+  if(q) window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(q), "_blank");
+};
+
+window.loadExamples = async function(){
+  if(state.dishes.length) return;
+  state.dishes = [
+    {name:"Spaghetti Bolognese", hint:"Hackfleisch auftauen", image:"", favorite:true, ingredients:parseIngredients("Spaghetti|500|g|Trockenwaren|\nHackfleisch|500|g|Fleisch & Fisch|frisch\nTomatensoße|2|Gläser|Trockenwaren|\nZwiebeln|2|Stück|Obst & Gemüse|frisch")},
+    {name:"Wraps", hint:"Salat frisch kaufen", image:"", favorite:false, ingredients:parseIngredients("Wraps|1|Packung|Trockenwaren|\nHähnchen|400|g|Fleisch & Fisch|frisch\nSalat|1|Kopf|Obst & Gemüse|frisch\nSoße|1|Flasche|Trockenwaren|")},
+    {name:"Salat mit Feta", hint:"Am selben Tag machen", image:"", favorite:false, ingredients:parseIngredients("Salat|1|Kopf|Obst & Gemüse|frisch\nFeta|1|Packung|Kühlregal|frisch\nTomaten|4|Stück|Obst & Gemüse|frisch")}
+  ];
+  await save();
+  render();
+};
+
+function renderDishes(){
+  const q = normalize(document.getElementById("recipeSearch").value).toLowerCase();
+  const box = document.getElementById("dishList");
+  box.innerHTML = "";
+  let dishes = state.dishes.slice();
+  if(q) dishes = dishes.filter(d => d.name.toLowerCase().includes(q));
+  if(!dishes.length){
+    box.innerHTML = '<div class="empty">Noch keine Gerichte gespeichert.</div>';
+    return;
+  }
+
+  dishes.forEach(d => {
+    const i = state.dishes.indexOf(d);
+    const preview = (d.ingredients || []).map(ingredientLabel).join(", ");
+    const div = document.createElement("div");
+    div.className = "box";
+    div.innerHTML = `<div class="title">${escapeHtml(d.name)} ${d.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
+      ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
+      <div class="meta">${escapeHtml(preview)}</div>
+      ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
+      <div class="actions">
+        <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
+        <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
+        <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
+      </div>`;
+    box.appendChild(div);
+  });
+}
+
+function renderWeek(){
+  const box = document.getElementById("week");
+  box.innerHTML = "";
+  DAYS.forEach((day,i) => {
+    const options = state.dishes.map(d => `<option value="${escapeHtml(d.name)}" ${state.week[i]===d.name ? "selected" : ""}>${escapeHtml(d.name)}</option>`).join("");
+    const row = document.createElement("div");
+    row.className = "weekrow";
+    row.innerHTML = `<div class="title">${day}</div>
+      <div class="daycontent">
+        <input value="${escapeHtml(state.week[i] || "")}" oninput="updateDay(${i}, this.value)">
+        <select onchange="updateDay(${i}, this.value)"><option value="">Gericht wählen</option>${options}</select>
+      </div>
+      <button class="small" onclick="rollDay(${i})">🎲</button>`;
+    box.appendChild(row);
+  });
 }
 
 function renderShop(){
+  const box = document.getElementById("shopList");
+  box.innerHTML = "";
 
-const box=document.getElementById("shopList")
-box.innerHTML=""
+  const auto = [];
+  state.week.forEach(name => {
+    const dish = state.dishes.find(d => d.name === name);
+    if(!dish) return;
+    (dish.ingredients || []).forEach(i => auto.push({
+      key: (i.name || "").toLowerCase() + "|" + (i.unit || "").toLowerCase(),
+      name:i.name, amount:scaleAmount(i.amount), unit:i.unit, area:i.area || "Sonstiges", fresh:!!i.fresh, auto:true
+    }));
+  });
 
-state.shopping.forEach((s,i)=>{
+  const reduced = auto.map(item => {
+    const stock = stockMatch(item);
+    if(!stock) return item;
+    if(isNumeric(item.amount) && isNumeric(stock.amount)){
+      const diff = parseNumber(item.amount) - parseNumber(stock.amount);
+      if(diff <= 0) return null;
+      return { ...item, amount:String(diff) };
+    }
+    return item;
+  }).filter(Boolean);
 
-const div=document.createElement("div")
+  const merged = uniqueByNameUnit([...reduced, ...state.shopping.map(x => ({...x, key:x.id, auto:false}))]);
 
-div.innerHTML=`
-${s}
-<button class="small" onclick="editShop(${i})">ändern</button>
-<button class="small" onclick="deleteShop(${i})">x</button>
-`
+  if(!merged.length){
+    box.innerHTML = '<div class="empty">Noch keine Einkaufsartikel.</div>';
+    return;
+  }
 
-box.appendChild(div)
+  const groups = {};
+  merged.forEach(item => {
+    const area = AREA_TO_SUPERMARKET[item.area || "Sonstiges"] || "Sonstiges";
+    if(!groups[area]) groups[area] = [];
+    groups[area].push(item);
+  });
 
-})
-
+  Object.keys(groups).forEach(area => {
+    const areaDiv = document.createElement("div");
+    areaDiv.className = "box";
+    areaDiv.innerHTML = `<div class="title">${escapeHtml(area)}</div>`;
+    groups[area].forEach(item => {
+      const override = item.auto ? (state.shoppingEdits[item.key] || null) : null;
+      const finalItem = override ? { ...item, ...override } : item;
+      const label = [finalItem.amount, finalItem.unit].filter(Boolean).join(" ");
+      const row = document.createElement("div");
+      row.className = "simpleitem";
+      row.style.marginTop = "8px";
+      row.innerHTML = `<span>${escapeHtml(finalItem.name)}${label ? " – " + escapeHtml(label) : ""}${item.auto ? " (auto)" : ""}${finalItem.fresh ? ' <span class="pill pill-fresh">frisch</span>' : ''}</span>
+        <div class="actions">${
+          item.auto
+            ? `<button class="soft small" onclick="editAutoItem('${item.key}','${escapeHtml(finalItem.name)}','${escapeHtml(finalItem.amount || "")}','${escapeHtml(finalItem.unit || "")}')">Ändern</button>`
+            : `<button class="soft small" onclick="editShop('${item.id}')">Ändern</button><button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`
+        }</div>`;
+      areaDiv.appendChild(row);
+    });
+    box.appendChild(areaDiv);
+  });
 }
 
-function editShop(i){
-
-const val=prompt("Artikel ändern",state.shopping[i])
-
-if(val!==null){
-state.shopping[i]=val
-save()
-renderShop()
+function renderStock(){
+  const box = document.getElementById("stockList");
+  box.innerHTML = "";
+  if(!state.stock.length){
+    box.innerHTML = '<div class="empty">Noch kein Vorrat.</div>';
+    return;
+  }
+  state.stock.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "simpleitem";
+    const label = [item.amount, item.unit].filter(Boolean).join(" ");
+    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}</span>
+      <div class="actions"><button class="soft small" onclick="editStock('${item.id}')">Ändern</button><button class="danger small" onclick="deleteStock('${item.id}')">Löschen</button></div>`;
+    box.appendChild(div);
+  });
 }
 
+function renderFreezer(){
+  const box = document.getElementById("freezeList");
+  box.innerHTML = "";
+  if(!state.freezer.length){
+    box.innerHTML = '<div class="empty">Noch nichts im Gefrierschrank eingetragen.</div>';
+    return;
+  }
+  state.freezer.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "simpleitem";
+    const label = [item.amount, item.unit].filter(Boolean).join(" ");
+    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}</span>
+      <div class="actions"><button class="soft small" onclick="editFreeze('${item.id}')">Ändern</button><button class="danger small" onclick="deleteFreeze('${item.id}')">Löschen</button></div>`;
+    box.appendChild(div);
+  });
 }
 
-function deleteShop(i){
-state.shopping.splice(i,1)
-save()
-renderShop()
+function render(){
+  document.getElementById("servingsSelect").value = String(state.servings || 2);
+  renderDishes();
+  renderWeek();
+  renderShop();
+  renderStock();
+  renderFreezer();
 }
 
-function findIdeas(){
+onSnapshot(ref, snap => {
+  if(!snap.exists()){
+    updateStatus("Bereit – erste Speicherung bei deiner ersten Änderung.");
+    render();
+    return;
+  }
+  const data = snap.data();
+  state = {
+    dishes: Array.isArray(data.dishes) ? data.dishes : [],
+    week: Array.isArray(data.week) && data.week.length === 7 ? data.week : ["","","","","","",""],
+    servings: data.servings || 2,
+    shopping: Array.isArray(data.shopping) ? data.shopping : [],
+    stock: Array.isArray(data.stock) ? data.stock : [],
+    freezer: Array.isArray(data.freezer) ? data.freezer : [],
+    shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
+    editIndex: null
+  };
+  updateStatus("Synchronisiert ✅");
+  render();
+});
 
-const input=document.getElementById("ideaInput").value.toLowerCase()
-
-const ingredients=input.split(/,|\n/).map(x=>x.trim()).filter(x=>x)
-
-const results=[]
-
-state.dishes.forEach(d=>{
-
-let score=0
-
-d.ingredients.forEach(i=>{
-if(ingredients.includes(i.toLowerCase()))score++
-})
-
-if(score>0){
-results.push({name:d.name,score:score})
-}
-
-})
-
-results.sort((a,b)=>b.score-a.score)
-
-const box=document.getElementById("ideaResults")
-box.innerHTML=""
-
-if(results.length){
-
-results.forEach(r=>{
-
-const div=document.createElement("div")
-div.innerHTML=`${r.name} (${r.score} Zutaten passen)`
-box.appendChild(div)
-
-})
-
-}else{
-
-const ideas=[
-"Omelette",
-"Nudelpfanne",
-"Wraps",
-"Reispfanne",
-"Gemüsepfanne"
-]
-
-ideas.forEach(i=>{
-
-const div=document.createElement("div")
-div.innerHTML=i+" (KI Vorschlag)"
-box.appendChild(div)
-
-})
-
-}
-
-}
-
-load()
-render()
-
+render();
 </script>
-
 </body>
 </html>
