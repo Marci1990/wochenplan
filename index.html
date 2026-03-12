@@ -1,677 +1,75 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💛 Familie Hanst Wochenplan</title>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBl3-LMbx6tL5j96sjYvUMXpSF3D8iwS0I",
-      authDomain: "wochenplan-hast.firebaseapp.com",
-      projectId: "wochenplan-hast",
-      storageBucket: "wochenplan-hast.firebasestorage.app",
-      messagingSenderId: "909844114392",
-      appId: "1:909844114392:web:5554d7fad278c6ce5da0ad"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const stateRef = doc(db, "apps", "familie-hanst-main");
-
-    const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
-
-    let state = {
-      dishes: [],
-      week: ["","","","","","",""],
-      servings: 2,
-      freeze: [],
-      ideas: [],
-      editIndex: null
-    };
-
-    let isApplyingRemote = false;
-
-    function normalize(text) {
-      return String(text || "").trim();
-    }
-
-    async function saveState() {
-      if (isApplyingRemote) return;
-      await setDoc(stateRef, state);
-    }
-
-    function updateStatus(text) {
-      document.getElementById("status").textContent = text;
-    }
-
-    function setServings(value) {
-      state.servings = parseInt(value, 10) || 2;
-      saveState();
-      render();
-    }
-
-    function addDish() {
-      const name = normalize(document.getElementById("dishName").value);
-      const ingredients = normalize(document.getElementById("dishIngredients").value);
-      const hint = normalize(document.getElementById("dishHint").value);
-
-      if (!name) return;
-
-      const dish = { name, ingredients, hint };
-
-      if (state.editIndex !== null) {
-        const oldName = state.dishes[state.editIndex]?.name || "";
-        state.dishes[state.editIndex] = dish;
-        state.week = state.week.map(x => x === oldName ? name : x);
-        state.editIndex = null;
-        document.getElementById("saveDishBtn").textContent = "Speichern";
-        document.getElementById("cancelEditBtn").style.display = "none";
-      } else {
-        state.dishes.push(dish);
-      }
-
-      document.getElementById("dishName").value = "";
-      document.getElementById("dishIngredients").value = "";
-      document.getElementById("dishHint").value = "";
-
-      saveState();
-      render();
-    }
-
-    function editDish(index) {
-      const dish = state.dishes[index];
-      if (!dish) return;
-
-      document.getElementById("dishName").value = dish.name || "";
-      document.getElementById("dishIngredients").value = dish.ingredients || "";
-      document.getElementById("dishHint").value = dish.hint || "";
-
-      state.editIndex = index;
-      document.getElementById("saveDishBtn").textContent = "Änderungen speichern";
-      document.getElementById("cancelEditBtn").style.display = "inline-block";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function cancelEdit() {
-      state.editIndex = null;
-      document.getElementById("dishName").value = "";
-      document.getElementById("dishIngredients").value = "";
-      document.getElementById("dishHint").value = "";
-      document.getElementById("saveDishBtn").textContent = "Speichern";
-      document.getElementById("cancelEditBtn").style.display = "none";
-    }
-
-    function deleteDish(index) {
-      const removed = state.dishes[index];
-      if (!removed) return;
-      state.dishes.splice(index, 1);
-      state.week = state.week.map(x => x === removed.name ? "" : x);
-      saveState();
-      render();
-    }
-
-    function updateDay(index, value) {
-      state.week[index] = value;
-      saveState();
-      renderShopping();
-      renderPlanned();
-    }
-
-    function randomWeek() {
-      if (!state.dishes.length) return;
-
-      state.week = DAYS.map(() => {
-        const randomDish = state.dishes[Math.floor(Math.random() * state.dishes.length)];
-        return randomDish.name;
-      });
-
-      saveState();
-      render();
-    }
-
-    function clearWeek() {
-      state.week = ["","","","","","",""];
-      saveState();
-      render();
-    }
-
-    function addFreeze() {
-      const name = normalize(document.getElementById("freezeItem").value);
-      if (!name) return;
-      state.freeze.push(name);
-      document.getElementById("freezeItem").value = "";
-      saveState();
-      renderFreeze();
-    }
-
-    function deleteFreeze(index) {
-      state.freeze.splice(index, 1);
-      saveState();
-      renderFreeze();
-    }
-
-    function addIdea() {
-      const name = normalize(document.getElementById("ideaItem").value);
-      if (!name) return;
-      state.ideas.push(name);
-      document.getElementById("ideaItem").value = "";
-      saveState();
-      renderIdeas();
-    }
-
-    function deleteIdea(index) {
-      state.ideas.splice(index, 1);
-      saveState();
-      renderIdeas();
-    }
-
-    function googleRecipe(name) {
-      window.open("https://www.google.com/search?q=" + encodeURIComponent(name + " Rezept"), "_blank");
-    }
-
-    function chefRecipe(name) {
-      window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(name) + "/Rezepte.html", "_blank");
-    }
-
-    function thermomixRecipe(name) {
-      window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(name), "_blank");
-    }
-
-    function renderDishes() {
-      const box = document.getElementById("dishList");
-      box.innerHTML = "";
-
-      if (!state.dishes.length) {
-        box.innerHTML = "<div class='empty'>Noch keine Gerichte gespeichert.</div>";
-        return;
-      }
-
-      state.dishes.forEach((dish, index) => {
-        const div = document.createElement("div");
-        div.className = "recipe";
-
-        div.innerHTML = `
-          <div class="title">${escapeHtml(dish.name)}</div>
-          ${dish.hint ? `<div class="hint">💡 ${escapeHtml(dish.hint)}</div>` : ""}
-          <div class="meta">${escapeHtml(dish.ingredients || "")}</div>
-          <div class="actions">
-            <button class="soft" onclick="editDish(${index})">Bearbeiten</button>
-            <button class="soft" onclick="googleRecipe('${jsEscape(dish.name)}')">Google</button>
-            <button class="soft" onclick="chefRecipe('${jsEscape(dish.name)}')">Chefkoch</button>
-            <button class="soft" onclick="thermomixRecipe('${jsEscape(dish.name)}')">Thermomix</button>
-            <button class="danger" onclick="deleteDish(${index})">Löschen</button>
-          </div>
-        `;
-
-        box.appendChild(div);
-      });
-    }
-
-    function renderWeek() {
-      const box = document.getElementById("week");
-      box.innerHTML = "";
-
-      DAYS.forEach((day, index) => {
-        const row = document.createElement("div");
-        row.className = "weekrow";
-
-        const options = state.dishes
-          .map(d => `<option value="${escapeHtml(d.name)}" ${state.week[index] === d.name ? "selected" : ""}>${escapeHtml(d.name)}</option>`)
-          .join("");
-
-        row.innerHTML = `
-          <div class="dayname">${day}</div>
-          <div class="daycontent">
-            <input value="${escapeHtml(state.week[index] || "")}" oninput="updateDay(${index}, this.value)" placeholder="Gericht">
-            <select onchange="updateDay(${index}, this.value)">
-              <option value="">Gespeichertes Gericht wählen</option>
-              ${options}
-            </select>
-          </div>
-        `;
-
-        box.appendChild(row);
-      });
-    }
-
-    function renderShopping() {
-      const box = document.getElementById("shopping");
-      box.innerHTML = "";
-
-      let items = [];
-
-      state.week.forEach(name => {
-        const dish = state.dishes.find(d => d.name === name);
-        if (!dish) return;
-
-        dish.ingredients
-          .split("\n")
-          .map(x => x.trim())
-          .filter(Boolean)
-          .forEach(item => items.push(item));
-      });
-
-      if (!items.length) {
-        box.innerHTML = "<div class='empty'>Noch nichts eingeplant.</div>";
-        return;
-      }
-
-      items.forEach(item => {
-        const row = document.createElement("div");
-        row.className = "shopitem";
-        row.innerHTML = `<label><input type="checkbox"> ${escapeHtml(item)}</label>`;
-        box.appendChild(row);
-      });
-    }
-
-    function renderFreeze() {
-      const box = document.getElementById("freezeList");
-      box.innerHTML = "";
-
-      if (!state.freeze.length) {
-        box.innerHTML = "<div class='empty'>Noch nichts eingefroren.</div>";
-        return;
-      }
-
-      state.freeze.forEach((item, index) => {
-        const div = document.createElement("div");
-        div.className = "simpleitem";
-        div.innerHTML = `
-          <span>${escapeHtml(item)}</span>
-          <button class="danger small" onclick="deleteFreeze(${index})">Löschen</button>
-        `;
-        box.appendChild(div);
-      });
-    }
-
-    function renderIdeas() {
-      const box = document.getElementById("ideaList");
-      box.innerHTML = "";
-
-      if (!state.ideas.length) {
-        box.innerHTML = "<div class='empty'>Noch keine Ideen gespeichert.</div>";
-        return;
-      }
-
-      state.ideas.forEach((item, index) => {
-        const div = document.createElement("div");
-        div.className = "simpleitem";
-        div.innerHTML = `
-          <span>${escapeHtml(item)}</span>
-          <button class="danger small" onclick="deleteIdea(${index})">Löschen</button>
-        `;
-        box.appendChild(div);
-      });
-    }
-
-    function renderPlanned() {
-      const box = document.getElementById("plannedMeals");
-      box.innerHTML = "";
-
-      const planned = state.week.filter(Boolean);
-
-      if (!planned.length) {
-        box.innerHTML = "<li class='empty'>Noch kein Wochenplan vorhanden.</li>";
-        return;
-      }
-
-      planned.forEach(meal => {
-        const li = document.createElement("li");
-        li.textContent = meal;
-        box.appendChild(li);
-      });
-    }
-
-    function render() {
-      document.getElementById("servingsSelect").value = String(state.servings || 2);
-      renderDishes();
-      renderWeek();
-      renderShopping();
-      renderFreeze();
-      renderIdeas();
-      renderPlanned();
-    }
-
-    function escapeHtml(text) {
-      return String(text || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    function jsEscape(text) {
-      return String(text || "").replace(/'/g, "\\'");
-    }
-
-    window.setPersons = setServings;
-    window.addDish = addDish;
-    window.editDish = editDish;
-    window.cancelEdit = cancelEdit;
-    window.deleteDish = deleteDish;
-    window.updateDay = updateDay;
-    window.randomWeek = randomWeek;
-    window.clearWeek = clearWeek;
-    window.addFreeze = addFreeze;
-    window.deleteFreeze = deleteFreeze;
-    window.addIdea = addIdea;
-    window.deleteIdea = deleteIdea;
-    window.googleRecipe = googleRecipe;
-    window.chefRecipe = chefRecipe;
-    window.thermomixRecipe = thermomixRecipe;
-
-    document.addEventListener("DOMContentLoaded", () => {
-      updateStatus("Verbinde mit Firebase…");
-
-      onSnapshot(stateRef, async (snap) => {
-        if (!snap.exists()) {
-          isApplyingRemote = true;
-          await saveState();
-          isApplyingRemote = false;
-          updateStatus("Bereit ✅");
-          render();
-          return;
-        }
-
-        isApplyingRemote = true;
-        const data = snap.data();
-        state = {
-          dishes: Array.isArray(data.dishes) ? data.dishes : [],
-          week: Array.isArray(data.week) && data.week.length === 7 ? data.week : ["","","","","","",""],
-          servings: data.servings || 2,
-          freeze: Array.isArray(data.freeze) ? data.freeze : [],
-          ideas: Array.isArray(data.ideas) ? data.ideas : [],
-          editIndex: null
-        };
-        isApplyingRemote = false;
-        updateStatus("Synchronisiert ✅");
-        render();
-      });
-    });
-  </script>
-
-  <style>
-    :root{
-      --bg:#fff7fb;
-      --card:#ffffff;
-      --text:#2f2a33;
-      --muted:#746d78;
-      --border:#ead7e2;
-      --primary:#ef5f95;
-      --primary-dark:#df4c84;
-      --secondary:#eef2ff;
-      --danger:#ffe3e6;
-      --danger-text:#a61b3b;
-    }
-
-    *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      font-family:Arial,sans-serif;
-      background:linear-gradient(180deg,#fff8fc,#f7f7ff);
-      color:var(--text);
-    }
-
-    .wrap{
-      max-width:1200px;
-      margin:0 auto;
-      padding:18px;
-    }
-
-    .hero{
-      background:linear-gradient(135deg,#ff8fb0,#ff6d97 60%, #8d9cff);
-      color:#fff;
-      border-radius:24px;
-      padding:22px;
-      margin-bottom:16px;
-    }
-
-    .hero h1{margin:0 0 8px}
-    .hero p{margin:0}
-
-    .status{
-      background:#fff;
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:10px 12px;
-      margin-bottom:16px;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns:1.1fr .9fr;
-      gap:16px;
-    }
-
-    .grid2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px;
-      margin-top:16px;
-    }
-
-    @media (max-width:900px){
-      .grid,.grid2{grid-template-columns:1fr}
-    }
-
-    .card{
-      background:white;
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:16px;
-      margin-bottom:16px;
-    }
-
-    .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-bottom:10px;
-      align-items:center;
-    }
-
-    input,textarea,select,button{
-      font:inherit;
-      border-radius:12px;
-    }
-
-    input,textarea,select{
-      width:100%;
-      padding:11px 12px;
-      border:1px solid var(--border);
-      background:#fff;
-    }
-
-    textarea{
-      min-height:90px;
-      resize:vertical;
-    }
-
-    button{
-      border:none;
-      padding:10px 14px;
-      cursor:pointer;
-      font-weight:700;
-      background:var(--primary);
-      color:#fff;
-    }
-
-    button:hover{
-      background:var(--primary-dark);
-    }
-
-    button.soft{
-      background:var(--secondary);
-      color:#28324a;
-    }
-
-    button.danger{
-      background:var(--danger);
-      color:var(--danger-text);
-    }
-
-    button.small{
-      padding:6px 10px;
-      font-size:13px;
-    }
-
-    .grow{flex:1;min-width:180px}
-    .w120{width:120px}
-
-    .list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-
-    .recipe,.shopitem,.simpleitem,.weekrow{
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:12px;
-      background:#fff;
-    }
-
-    .title{
-      font-weight:700;
-      margin-bottom:6px;
-    }
-
-    .meta{
-      color:var(--muted);
-      white-space:pre-wrap;
-      font-size:14px;
-    }
-
-    .hint{
-      color:#9b5e00;
-      background:#fff4e8;
-      border:1px solid #ffd8b0;
-      border-radius:10px;
-      padding:6px 8px;
-      margin:8px 0;
-      font-size:14px;
-    }
-
-    .actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
-
-    .weekrow{
-      display:grid;
-      grid-template-columns:110px 1fr;
-      gap:10px;
-      align-items:start;
-    }
-
-    .daycontent{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-
-    .simpleitem{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-
-    .empty{
-      color:var(--muted);
-      font-size:14px;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <section class="hero">
-      <h1>💛 Familie Hanst Wochenplan</h1>
-      <p>Mit Wochenplan, Einkaufsliste, Gefrierliste, Ideen und Firebase-Sync.</p>
-    </section>
-
-    <div id="status" class="status">Verbinde mit Firebase…</div>
-
-    <div class="card">
-      <div class="row">
-        <button onclick="randomWeek()">🎲 Zufallsplan</button>
-        <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
-        <label style="display:flex;align-items:center;gap:8px;font-weight:700;">
-          Personen
-          <select id="servingsSelect" style="width:auto;" onchange="setPersons(this.value)">
-            <option>1</option>
-            <option selected>2</option>
-            <option>3</option>
-            <option>4</option>
-            <option>5</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <div class="grid">
-      <section class="card">
-        <h2>Gericht hinzufügen / bearbeiten</h2>
-
-        <input id="dishName" placeholder="Gericht">
-        <textarea id="dishIngredients" placeholder="Zutaten (eine pro Zeile)"></textarea>
-        <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
-
-        <div class="row">
-          <button id="saveDishBtn" onclick="addDish()">Speichern</button>
-          <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Wochenplan</h2>
-        <div id="week" class="list"></div>
-      </section>
-    </div>
-
-    <div class="grid2">
-      <section class="card">
-        <h2>Gespeicherte Gerichte</h2>
-        <div id="dishList" class="list"></div>
-      </section>
-
-      <section class="card">
-        <h2>Einkaufsliste</h2>
-        <div id="shopping" class="list"></div>
-      </section>
-    </div>
-
-    <div class="grid2">
-      <section class="card">
-        <h2>Gefrierliste</h2>
-        <div class="row">
-          <input id="freezeItem" class="grow" placeholder="z.B. Hackfleisch, Brot, Suppe">
-          <button onclick="addFreeze()">Hinzufügen</button>
-        </div>
-        <div id="freezeList" class="list"></div>
-      </section>
-
-      <section class="card">
-        <h2>Ideenliste</h2>
-        <div class="row">
-          <input id="ideaItem" class="grow" placeholder="z.B. Lasagne, Chili, Auflauf">
-          <button onclick="addIdea()">Hinzufügen</button>
-        </div>
-        <div id="ideaList" class="list"></div>
-      </section>
-    </div>
-
-    <div class="card">
-      <h2>Geplante Gerichte</h2>
-      <ul id="plannedMeals"></ul>
-    </div>
-  </div>
-</body>
-</html>
+💛 Familie Hanst Wochenplan
+Mit Wochenplan, Einkaufsliste, Vorrat, Gefrierliste, Ideen und Firebase-Sync.
+Synchronisiert ✅
+🎲 Zufallsplan
+Wochenplan leeren
+Personen 
+Gericht hinzufügen / bearbeiten
+
+  
+Speichern
+Wochenplan
+
+Montag
+
+Dienstag
+
+Mittwoch
+
+💡 1
+Donnerstag
+
+Freitag
+
+Samstag
+
+Sonntag
+
+Gespeicherte Gerichte
+
+test
+Bearbeiten
+Google
+Chefkoch
+Thermomix
+Löschen
+eier
+💡 1
+eier 1
+Bearbeiten
+Google
+Chefkoch
+Thermomix
+Löschen
+Einkaufsliste
+
+Sonstiges
+
+eier 1
+ohne Menge
+Vorrat
+
+Hinzufügen
+Noch kein Vorrat eingetragen.
+Gefrierliste
+
+Hinzufügen
+Noch nichts eingefroren.
+Ideenliste
+
+Hinzufügen
+Noch keine Ideen gespeichert.
+Rezeptsuche
+
+Google
+Chefkoch
+Thermomix
+Geplante Gerichte
+
+test
+test
+eier
+test
+test
+test
+test
