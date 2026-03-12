@@ -3,42 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>💛 Familie Hanst Wochenplan V4</title>
+  <title>💛 Familie Hanst Wochenplan</title>
   <style>
-    :root{--border:#ead7e2;--primary:#ef5f95;--primary-dark:#df4c84;--secondary:#eef2ff;--danger:#ffe3e6;--danger-text:#a61b3b;--success:#e8fff1;--success-text:#176a47;--fresh:#fff7e8;--hint:#fff4e8;--fav:#fff6cf;--muted:#746d78;--shadow:0 8px 24px rgba(0,0,0,.06)}
-    *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#fff8fc,#f7f7ff);color:#2f2a33}
-    .wrap{max-width:1250px;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#ff8fb0,#ff6d97 60%,#8d9cff);color:#fff;border-radius:24px;padding:22px;margin-bottom:16px;box-shadow:var(--shadow)}
-    .hero h1{margin:0 0 8px}.hero p{margin:0;opacity:.95}.status,.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
-    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media (max-width:900px){.grid,.grid2{grid-template-columns:1fr}}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px} input,textarea,select,button{font:inherit;border-radius:12px}
-    input,textarea,select{width:100%;padding:11px 12px;border:1px solid var(--border);background:#fff} textarea{min-height:96px;resize:vertical}
-    button{border:none;padding:10px 14px;cursor:pointer;font-weight:700;background:var(--primary);color:#fff} button:hover{background:var(--primary-dark)}
-    button.soft{background:var(--secondary);color:#28324a} button.danger{background:var(--danger);color:var(--danger-text)} button.success{background:var(--success);color:var(--success-text)} button.small{padding:6px 10px;font-size:13px}
-    .grow{flex:1;min-width:180px}.w120{width:120px}.w140{width:140px}.list{display:flex;flex-direction:column;gap:10px}
+    :root{--border:#ead7e2;--primary:#ef5f95;--primary-dark:#df4c84;--secondary:#eef2ff;--danger:#ffe3e6;--danger-text:#a61b3b;--fresh:#fff7e8;--hint:#fff4e8;--muted:#746d78}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#fff8fc,#f7f7ff);color:#2f2a33}
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    .hero{background:linear-gradient(135deg,#ff8fb0,#ff6d97 60%,#8d9cff);color:#fff;border-radius:24px;padding:22px;margin-bottom:16px}
+    .hero h1{margin:0 0 8px}.hero p{margin:0}
+    .status,.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:900px){.grid,.grid2{grid-template-columns:1fr}}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    input,textarea,select,button{font:inherit;border-radius:12px}
+    input,textarea,select{width:100%;padding:11px 12px;border:1px solid var(--border);background:#fff}
+    textarea{min-height:90px;resize:vertical}
+    button{border:none;padding:10px 14px;cursor:pointer;font-weight:700;background:var(--primary);color:#fff}
+    button:hover{background:var(--primary-dark)}
+    button.soft{background:var(--secondary);color:#28324a}
+    button.danger{background:var(--danger);color:var(--danger-text)}
+    button.small{padding:6px 10px;font-size:13px}
+    .grow{flex:1;min-width:180px}.w120{width:120px}.w140{width:140px}
+    .list{display:flex;flex-direction:column;gap:10px}
     .box,.area,.weekrow,.simpleitem,.shoprow{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
-    .weekrow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:start}@media (max-width:700px){.weekrow{grid-template-columns:1fr}}
-    .daycontent{display:flex;flex-direction:column;gap:8px}.title{font-weight:700}.meta{color:var(--muted);font-size:14px;white-space:pre-wrap;margin-top:6px}
+    .weekrow{display:grid;grid-template-columns:110px 1fr;gap:10px}
+    .daycontent{display:flex;flex-direction:column;gap:8px}
+    .title{font-weight:700}.meta{color:var(--muted);font-size:14px;white-space:pre-wrap;margin-top:6px}
     .hint{background:var(--hint);border:1px solid #ffd8b0;color:#9b5e00;border-radius:10px;padding:6px 8px;margin:8px 0;font-size:14px}
     .pill{display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12px;margin-left:6px;background:#fff}
-    .pill-fresh{background:var(--fresh);border-color:#ffd285;color:#975e00}.pill-fav{background:var(--fav);border-color:#eed27a;color:#8e6b00}
-    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.shoprow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start}
-    .fresh{background:var(--fresh)} .done{opacity:.6}.done .title{text-decoration:line-through}.empty{color:var(--muted);font-size:14px}.simpleitem{display:flex;justify-content:space-between;gap:10px;align-items:center}.small-note{font-size:13px;color:var(--muted);margin-top:4px}
+    .pill-fresh{background:var(--fresh);border-color:#ffd285;color:#975e00}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .shoprow{display:grid;grid-template-columns:28px 1fr;gap:10px}
+    .fresh{background:var(--fresh)} .done{opacity:.6} .done .title{text-decoration:line-through}
+    .empty{color:var(--muted);font-size:14px}
+    .simpleitem{display:flex;justify-content:space-between;gap:10px;align-items:center}
   </style>
 </head>
 <body>
 <div class="wrap">
-  <section class="hero"><h1>💛 Familie Hanst Wochenplan</h1><p>Mit Sync, Favoriten, Vorrat-Abgleich, manuell bearbeitbarer Einkaufsliste, Gefrierliste und Ideen.</p></section>
+  <section class="hero">
+    <h1>💛 Familie Hanst Wochenplan</h1>
+    <p>Mit Wochenplan, Einkaufsliste, Vorrat, Gefrierliste, Ideen und Firebase-Sync.</p>
+  </section>
+
   <div id="status" class="status">Verbinde mit Firebase…</div>
-  <div class="card"><div class="row">
-    <button onclick="randomWeek()">🎲 Zufallsplan</button>
-    <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
-    <button class="soft" onclick="loadExamples()">Beispiele laden</button>
-    <label style="display:flex;align-items:center;gap:8px;font-weight:700;">Personen
-      <select id="servingsSelect" style="width:auto;" onchange="setPersons(this.value)">
-        <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
-      </select>
-    </label>
-  </div></div>
+
+  <div class="card">
+    <div class="row">
+      <button onclick="randomWeek()">🎲 Zufallsplan</button>
+      <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:700;">
+        Personen
+        <select id="servingsSelect" style="width:auto;" onchange="setPersons(this.value)">
+          <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option>
+        </select>
+      </label>
+    </div>
+  </div>
 
   <div class="grid">
     <section class="card">
@@ -52,34 +73,26 @@ Hackfleisch|500|g|Fleisch & Fisch|frisch
 Tomatensoße|2|Gläser|Trockenwaren|
 Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
-      <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <div class="row">
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
         <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
       </div>
     </section>
 
-    <section class="card"><h2>Wochenplan</h2><div id="week" class="list"></div></section>
+    <section class="card">
+      <h2>Wochenplan</h2>
+      <div id="week" class="list"></div>
+    </section>
   </div>
 
   <div class="grid2">
-    <section class="card"><h2>Gespeicherte Gerichte</h2><input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()"><div id="dishList" class="list" style="margin-top:10px"></div></section>
+    <section class="card">
+      <h2>Gespeicherte Gerichte</h2>
+      <div id="dishList" class="list"></div>
+    </section>
 
     <section class="card">
       <h2>Einkaufsliste</h2>
-      <div class="small-note">Automatisch aus dem Wochenplan erstellt. Du kannst manuell hinzufügen und alle Punkte ändern. Vorrat wird direkt abgezogen.</div>
-      <div class="row" style="margin-top:12px">
-        <input id="shopName" class="grow" placeholder="Artikel">
-        <input id="shopAmount" class="w120" placeholder="Menge">
-        <input id="shopUnit" class="w140" placeholder="Einheit">
-      </div>
-      <div class="row">
-        <select id="shopArea" class="grow">
-          <option>Obst & Gemüse</option><option>Kühlregal</option><option>Fleisch & Fisch</option><option>Tiefkühl</option><option>Trockenwaren</option><option>Gewürze</option><option>Getränke</option><option>Bäckerei</option><option selected>Sonstiges</option>
-        </select>
-        <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
-        <button onclick="addManualShopping()">Hinzufügen</button>
-      </div>
       <div id="shopping" class="list"></div>
     </section>
   </div>
@@ -87,87 +100,299 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
   <div class="grid2">
     <section class="card">
       <h2>Vorrat</h2>
-      <div class="small-note">Wenn etwas hier drin ist, wird es automatisch von der Einkaufsliste abgezogen.</div>
-      <div class="row" style="margin-top:12px"><input id="stockName" class="grow" placeholder="z.B. Zwiebeln"><input id="stockAmount" class="w120" placeholder="Menge"><input id="stockUnit" class="w140" placeholder="Einheit"><button onclick="addStock()">Hinzufügen</button></div>
+      <div class="row">
+        <input id="stockName" class="grow" placeholder="z.B. Zwiebeln">
+        <input id="stockAmount" class="w120" placeholder="Menge">
+        <input id="stockUnit" class="w140" placeholder="Einheit">
+        <button onclick="addStock()">Hinzufügen</button>
+      </div>
       <div id="stockList" class="list"></div>
     </section>
-    <section class="card"><h2>Gefrierliste</h2><div class="row"><input id="freezeItem" class="grow" placeholder="z.B. Hackfleisch, Brot, Suppe"><button onclick="addFreeze()">Hinzufügen</button></div><div id="freezeList" class="list"></div></section>
+
+    <section class="card">
+      <h2>Gefrierliste</h2>
+      <div class="row">
+        <input id="freezeItem" class="grow" placeholder="z.B. Hackfleisch, Brot, Suppe">
+        <button onclick="addFreeze()">Hinzufügen</button>
+      </div>
+      <div id="freezeList" class="list"></div>
+    </section>
   </div>
 
   <div class="grid2">
-    <section class="card"><h2>Ideenliste</h2><div class="row"><input id="ideaItem" class="grow" placeholder="z.B. Lasagne, Chili, Auflauf"><button onclick="addIdea()">Hinzufügen</button></div><div id="ideaList" class="list"></div></section>
-    <section class="card"><h2>Rezeptsuche</h2><div class="row"><input id="searchName" class="grow" placeholder="z.B. Lasagne"><button class="soft" onclick="searchGoogle()">Google</button><button class="soft" onclick="searchChef()">Chefkoch</button><button class="soft" onclick="searchThermo()">Thermomix</button></div></section>
+    <section class="card">
+      <h2>Ideenliste</h2>
+      <div class="row">
+        <input id="ideaItem" class="grow" placeholder="z.B. Lasagne, Chili, Auflauf">
+        <button onclick="addIdea()">Hinzufügen</button>
+      </div>
+      <div id="ideaList" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Rezeptsuche</h2>
+      <div class="row">
+        <input id="searchName" class="grow" placeholder="z.B. Lasagne">
+        <button class="soft" onclick="searchGoogle()">Google</button>
+        <button class="soft" onclick="searchChef()">Chefkoch</button>
+        <button class="soft" onclick="searchThermo()">Thermomix</button>
+      </div>
+    </section>
   </div>
 
-  <div class="card"><h2>Geplante Gerichte</h2><ul id="plannedMeals"></ul></div>
+  <div class="card">
+    <h2>Geplante Gerichte</h2>
+    <ul id="plannedMeals"></ul>
+  </div>
 </div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-const firebaseConfig = { apiKey:"AIzaSyBl3-LMbx6tL5j96sjYvUMXpSF3D8iwS0I", authDomain:"wochenplan-hast.firebaseapp.com", projectId:"wochenplan-hast", storageBucket:"wochenplan-hast.firebasestorage.app", messagingSenderId:"909844114392", appId:"1:909844114392:web:5554d7fad278c6ce5da0ad" };
-const app = initializeApp(firebaseConfig), db = getFirestore(app), ref = doc(db, "apps", "familie-hanst-v4");
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBl3-LMbx6tL5j96sjYvUMXpSF3D8iwS0I",
+  authDomain: "wochenplan-hast.firebaseapp.com",
+  projectId: "wochenplan-hast",
+  storageBucket: "wochenplan-hast.firebasestorage.app",
+  messagingSenderId: "909844114392",
+  appId: "1:909844114392:web:5554d7fad278c6ce5da0ad"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const ref = doc(db,"apps","familie-hanst-luxus");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
-window.state = { dishes:[], week:["","","","","","",""], servings:2, freeze:[], ideas:[], stock:[], checked:{}, editIndex:null, manualShopping:[], shoppingEdits:{} };
+
+window.state = { dishes:[], week:["","","","","","",""], servings:2, freeze:[], ideas:[], stock:[], checked:{}, editIndex:null };
 let applying = false;
-const normalize=t=>String(t||"").trim();
-const updateStatus=t=>document.getElementById("status").textContent=t;
-const parseNumber=v=>parseFloat(String(v).replace(",", "."));
-const isNumeric=v=>!Number.isNaN(parseNumber(v));
-function scaleAmount(amount){ if(amount===""||amount==null) return ""; const n=parseNumber(amount); if(Number.isNaN(n)) return amount; const s=Math.round((n*(state.servings/2))*100)/100; return String(s).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1"); }
-const save=()=>!applying?setDoc(ref,window.state):undefined;
-const escapeHtml=t=>String(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-const jsEscape=t=>String(t||"").replace(/'/g,"\'");
-function parseIngredients(text){ return text.split("
-").map(x=>x.trim()).filter(Boolean).map(line=>{const p=line.split("|").map(x=>x.trim()); return {name:normalize(p[0]||""),amount:normalize(p[1]||""),unit:normalize(p[2]||""),area:AREAS.includes(normalize(p[3]||""))?normalize(p[3]):"Sonstiges",fresh:normalize(p[4]||"").toLowerCase()==="frisch"};}).filter(x=>x.name); }
-const ingredientsToText=items=>(items||[]).map(i=>[i.name,i.amount,i.unit,i.area,i.fresh?"frisch":""].join("|")).join("
-");
-const ingredientLabel=i=>{const qty=[scaleAmount(i.amount),i.unit].filter(Boolean).join(" "); return qty?`${i.name} (${qty})`:i.name;};
-const ingredientKey=i=>`${i.name.toLowerCase()}|${(i.unit||"").toLowerCase()}|${(i.area||"Sonstiges").toLowerCase()}`;
-const stockMatch=item=>state.stock.find(s=>s.name.toLowerCase()===item.name.toLowerCase()&&(s.unit||"").toLowerCase()===(item.unit||"").toLowerCase());
-window.setPersons=v=>{state.servings=parseInt(v,10)||2; save(); render();};
-window.addDish=()=>{const name=normalize(document.getElementById("dishName").value), ingredientsRaw=document.getElementById("dishIngredients").value, hint=normalize(document.getElementById("dishHint").value), favorite=document.getElementById("dishFavorite").checked; if(!name) return; const dish={name,ingredients:parseIngredients(ingredientsRaw),hint,favorite}; if(state.editIndex!==null){const old=state.dishes[state.editIndex]?.name||""; state.dishes[state.editIndex]=dish; state.week=state.week.map(x=>x===old?name:x); state.editIndex=null; document.getElementById("saveDishBtn").textContent="Speichern"; document.getElementById("cancelEditBtn").style.display="none";} else state.dishes.push(dish); document.getElementById("dishName").value=""; document.getElementById("dishIngredients").value=""; document.getElementById("dishHint").value=""; document.getElementById("dishFavorite").checked=false; save(); render();};
-window.editDish=i=>{const dish=state.dishes[i]; if(!dish) return; document.getElementById("dishName").value=dish.name||""; document.getElementById("dishIngredients").value=ingredientsToText(dish.ingredients||[]); document.getElementById("dishHint").value=dish.hint||""; document.getElementById("dishFavorite").checked=!!dish.favorite; state.editIndex=i; document.getElementById("saveDishBtn").textContent="Änderungen speichern"; document.getElementById("cancelEditBtn").style.display="inline-block"; window.scrollTo({top:0,behavior:"smooth"});};
-window.cancelEdit=()=>{state.editIndex=null; document.getElementById("dishName").value=""; document.getElementById("dishIngredients").value=""; document.getElementById("dishHint").value=""; document.getElementById("dishFavorite").checked=false; document.getElementById("saveDishBtn").textContent="Speichern"; document.getElementById("cancelEditBtn").style.display="none";};
-window.deleteDish=i=>{const removed=state.dishes[i]; if(!removed) return; state.dishes.splice(i,1); state.week=state.week.map(x=>x===removed.name?"":x); save(); render();};
-window.toggleFavorite=i=>{if(state.dishes[i]){state.dishes[i].favorite=!state.dishes[i].favorite; save(); renderDishes();}};
-window.randomWeek=()=>{if(!state.dishes.length) return; const weighted=[]; state.dishes.forEach(d=>{weighted.push(d); if(d.favorite) weighted.push(d,d);}); state.week=DAYS.map(()=>weighted[Math.floor(Math.random()*weighted.length)].name); save(); render();};
-window.clearWeek=()=>{state.week=["","","","","","",""]; save(); render();};
-window.updateDay=(i,val)=>{state.week[i]=val; save(); renderWeek(); renderShopping(); renderPlanned();};
-window.addFreeze=()=>{const v=normalize(document.getElementById("freezeItem").value); if(!v) return; state.freeze.push(v); document.getElementById("freezeItem").value=""; save(); renderFreeze();};
-window.deleteFreeze=i=>{state.freeze.splice(i,1); save(); renderFreeze();};
-window.addIdea=()=>{const v=normalize(document.getElementById("ideaItem").value); if(!v) return; state.ideas.push(v); document.getElementById("ideaItem").value=""; save(); renderIdeas();};
-window.deleteIdea=i=>{state.ideas.splice(i,1); save(); renderIdeas();};
-window.addStock=()=>{const name=normalize(document.getElementById("stockName").value), amount=normalize(document.getElementById("stockAmount").value), unit=normalize(document.getElementById("stockUnit").value); if(!name) return; state.stock.push({name,amount,unit}); document.getElementById("stockName").value=""; document.getElementById("stockAmount").value=""; document.getElementById("stockUnit").value=""; save(); renderStock(); renderShopping();};
-window.deleteStock=i=>{state.stock.splice(i,1); save(); renderStock(); renderShopping();};
-window.addManualShopping=()=>{const name=normalize(document.getElementById("shopName").value), amount=normalize(document.getElementById("shopAmount").value), unit=normalize(document.getElementById("shopUnit").value), area=normalize(document.getElementById("shopArea").value)||"Sonstiges", fresh=document.getElementById("shopFresh").checked; if(!name) return; state.manualShopping.push({id:Date.now().toString()+Math.random().toString(36).slice(2,6),name,amount,unit,area,fresh}); document.getElementById("shopName").value=""; document.getElementById("shopAmount").value=""; document.getElementById("shopUnit").value=""; document.getElementById("shopArea").value="Sonstiges"; document.getElementById("shopFresh").checked=false; save(); renderShopping();};
-window.deleteManualShopping=id=>{state.manualShopping=state.manualShopping.filter(x=>x.id!==id); save(); renderShopping();};
-window.editShoppingItem=(key,name,amount,unit,area,fresh)=>{const newName=prompt("Artikel",name); if(newName===null) return; const newAmount=prompt("Menge",amount||""); if(newAmount===null) return; const newUnit=prompt("Einheit",unit||""); if(newUnit===null) return; state.shoppingEdits[key]={name:normalize(newName),amount:normalize(newAmount),unit:normalize(newUnit),area:area||"Sonstiges",fresh:!!fresh}; save(); renderShopping();};
-window.toggleCheck=key=>{state.checked[key]=!state.checked[key]; save(); renderShopping();};
-window.searchGoogle=()=>{const q=normalize(document.getElementById("searchName").value); if(q) window.open("https://www.google.com/search?q="+encodeURIComponent(q+" rezept"),"_blank");};
-window.searchChef=()=>{const q=normalize(document.getElementById("searchName").value); if(q) window.open("https://www.chefkoch.de/rs/s0/"+encodeURIComponent(q)+"/Rezepte.html","_blank");};
-window.searchThermo=()=>{const q=normalize(document.getElementById("searchName").value); if(q) window.open("https://www.rezeptwelt.de/suche?q="+encodeURIComponent(q),"_blank");};
-window.googleRecipe=name=>window.open("https://www.google.com/search?q="+encodeURIComponent(name+" rezept"),"_blank");
-window.chefRecipe=name=>window.open("https://www.chefkoch.de/rs/s0/"+encodeURIComponent(name)+"/Rezepte.html","_blank");
-window.thermomixRecipe=name=>window.open("https://www.rezeptwelt.de/suche?q="+encodeURIComponent(name),"_blank");
-window.loadExamples=()=>{if(state.dishes.length) return; state.dishes=[{name:"Spaghetti Bolognese",hint:"Hackfleisch auftauen",favorite:true,ingredients:parseIngredients("Spaghetti|500|g|Trockenwaren|
-Hackfleisch|500|g|Fleisch & Fisch|frisch
-Tomatensoße|2|Gläser|Trockenwaren|
-Zwiebeln|2|Stück|Obst & Gemüse|frisch")},{name:"Wraps",hint:"Salat frisch kaufen",favorite:false,ingredients:parseIngredients("Wraps|1|Packung|Trockenwaren|
-Hähnchen|400|g|Fleisch & Fisch|frisch
-Salat|1|Kopf|Obst & Gemüse|frisch
-Soße|1|Flasche|Trockenwaren|")},{name:"Salat mit Feta",hint:"Am selben Tag machen",favorite:false,ingredients:parseIngredients("Salat|1|Kopf|Obst & Gemüse|frisch
-Feta|1|Packung|Kühlregal|frisch
-Tomaten|4|Stück|Obst & Gemüse|frisch")}]; save(); render();};
-function renderDishes(){ const q=normalize(document.getElementById("recipeSearch").value).toLowerCase(); const box=document.getElementById("dishList"); box.innerHTML=""; let dishes=state.dishes.slice(); if(q) dishes=dishes.filter(d=>d.name.toLowerCase().includes(q)||(d.hint||"").toLowerCase().includes(q)||(d.ingredients||[]).some(i=>i.name.toLowerCase().includes(q))); if(!dishes.length){ box.innerHTML="<div class='empty'>Noch keine passenden Gerichte gespeichert.</div>"; return; } dishes.forEach(dish=>{ const i=state.dishes.indexOf(dish); const preview=(dish.ingredients||[]).map(ingredientLabel).join(", "); const div=document.createElement("div"); div.className="box"; div.innerHTML=`<div class="title">${escapeHtml(dish.name)} ${dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>${dish.hint ? `<div class="hint">💡 ${escapeHtml(dish.hint)}</div>` : ""}<div class="meta">${escapeHtml(preview)}</div><div class="actions"><button class="soft small" onclick="editDish(${i})">Bearbeiten</button><button class="soft small" onclick="toggleFavorite(${i})">${dish.favorite ? '★ Favorit' : '☆ Favorit'}</button><button class="soft small" onclick="googleRecipe('${jsEscape(dish.name)}')">Google</button><button class="soft small" onclick="chefRecipe('${jsEscape(dish.name)}')">Chefkoch</button><button class="soft small" onclick="thermomixRecipe('${jsEscape(dish.name)}')">Thermomix</button><button class="danger small" onclick="deleteDish(${i})">Löschen</button></div>`; box.appendChild(div); }); }
-function renderWeek(){ const box=document.getElementById("week"); box.innerHTML=""; DAYS.forEach((day,i)=>{ const options=state.dishes.map(d=>`<option value="${escapeHtml(d.name)}" ${state.week[i]===d.name?"selected":""}>${escapeHtml(d.name)}</option>`).join(""); const dish=state.dishes.find(d=>d.name===state.week[i]); const rand=state.dishes.length?state.dishes[Math.floor(Math.random()*state.dishes.length)].name:""; const div=document.createElement("div"); div.className="weekrow"; div.innerHTML=`<div class="title">${day}</div><div class="daycontent"><input value="${escapeHtml(state.week[i]||"")}" oninput="updateDay(${i}, this.value)" placeholder="Gericht"><select onchange="updateDay(${i}, this.value)"><option value="">Gespeichertes Gericht wählen</option>${options}</select>${dish&&dish.hint?`<div class="hint">💡 ${escapeHtml(dish.hint)}</div>`:""}</div><button class="success small" onclick="updateDay(${i}, '${jsEscape(rand)}')">Neu</button>`; box.appendChild(div); }); }
-function renderShopping(){ const box=document.getElementById("shopping"); box.innerHTML=""; const grouped={}; AREAS.forEach(a=>grouped[a]=[]); state.week.forEach(name=>{ const dish=state.dishes.find(d=>d.name===name); if(!dish) return; (dish.ingredients||[]).forEach(item=>{ const key=ingredientKey(item), area=item.area||"Sonstiges", scaled=scaleAmount(item.amount); const existing=grouped[area].find(x=>x.key===key); if(existing){ if(isNumeric(existing.amount)&&isNumeric(scaled)) existing.amount=String(parseNumber(existing.amount)+parseNumber(scaled)); } else grouped[area].push({key,name:item.name,amount:scaled,unit:item.unit,fresh:!!item.fresh,manual:false}); }); }); AREAS.forEach(area=>{ grouped[area]=grouped[area].map(item=>{ const stock=stockMatch(item); if(!stock) return item; if(isNumeric(item.amount)&&isNumeric(stock.amount)){ const diff=parseNumber(item.amount)-parseNumber(stock.amount); if(diff<=0) return null; return {...item, amount:String(diff)}; } return item; }).filter(Boolean); }); (state.manualShopping||[]).forEach(item=>{ const area=item.area||"Sonstiges"; grouped[area].push({key:"manual_"+item.id,id:item.id,name:item.name,amount:item.amount,unit:item.unit,fresh:!!item.fresh,manual:true}); }); let has=false; AREAS.forEach(area=>{ if(!grouped[area].length) return; has=true; const areaDiv=document.createElement("div"); areaDiv.className="area"; areaDiv.innerHTML=`<div class="title">${escapeHtml(area)}</div>`; grouped[area].forEach(item=>{ const override=state.shoppingEdits[item.key]; const finalItem=override?{...item,...override}:item; const checkKey=area+"|"+finalItem.key+"|"+finalItem.name+"|"+finalItem.amount+"|"+finalItem.unit; const done=!!state.checked[checkKey]; const row=document.createElement("div"); row.className="shoprow"+(finalItem.fresh?" fresh":"")+(done?" done":""); row.style.marginTop="8px"; row.innerHTML=`<input type="checkbox" ${done?"checked":""} onchange="toggleCheck('${jsEscape(checkKey)}')"><div><div class="title">${escapeHtml(finalItem.name)} ${finalItem.fresh?'<span class="pill pill-fresh">frisch</span>':''}</div><div class="meta">${escapeHtml([finalItem.amount, finalItem.unit].filter(Boolean).join(" ")||"ohne Menge")}</div></div><div class="actions"><button class="soft small" onclick="editShoppingItem('${jsEscape(item.key)}','${jsEscape(finalItem.name)}','${jsEscape(finalItem.amount||"")}','${jsEscape(finalItem.unit||"")}','${jsEscape(area)}',${finalItem.fresh?'true':'false'})">Ändern</button>${item.manual?`<button class="danger small" onclick="deleteManualShopping('${item.id}')">Löschen</button>`:""}</div>`; areaDiv.appendChild(row); }); box.appendChild(areaDiv); }); if(!has) box.innerHTML="<div class='empty'>Noch nichts eingeplant.</div>"; }
-function renderFreeze(){ const box=document.getElementById("freezeList"); box.innerHTML=""; if(!state.freeze.length){ box.innerHTML="<div class='empty'>Noch nichts eingefroren.</div>"; return; } state.freeze.forEach((item,i)=>{ const div=document.createElement("div"); div.className="simpleitem"; div.innerHTML=`<span>${escapeHtml(item)}</span><button class="danger small" onclick="deleteFreeze(${i})">Löschen</button>`; box.appendChild(div); }); }
-function renderIdeas(){ const box=document.getElementById("ideaList"); box.innerHTML=""; if(!state.ideas.length){ box.innerHTML="<div class='empty'>Noch keine Ideen gespeichert.</div>"; return; } state.ideas.forEach((item,i)=>{ const div=document.createElement("div"); div.className="simpleitem"; div.innerHTML=`<span>${escapeHtml(item)}</span><button class="danger small" onclick="deleteIdea(${i})">Löschen</button>`; box.appendChild(div); }); }
-function renderStock(){ const box=document.getElementById("stockList"); box.innerHTML=""; if(!state.stock.length){ box.innerHTML="<div class='empty'>Noch kein Vorrat eingetragen.</div>"; return; } state.stock.forEach((item,i)=>{ const div=document.createElement("div"); div.className="simpleitem"; div.innerHTML=`<span>${escapeHtml(item.name)} – ${escapeHtml([item.amount, item.unit].filter(Boolean).join(" ")||"ohne Menge")}</span><button class="danger small" onclick="deleteStock(${i})">Löschen</button>`; box.appendChild(div); }); }
-function renderPlanned(){ const box=document.getElementById("plannedMeals"); box.innerHTML=""; const planned=state.week.filter(Boolean); if(!planned.length){ box.innerHTML="<li class='empty'>Noch kein Wochenplan vorhanden.</li>"; return; } planned.forEach(meal=>{ const li=document.createElement("li"); li.textContent=meal; box.appendChild(li); }); }
-function render(){ document.getElementById("servingsSelect").value=String(state.servings||2); renderDishes(); renderWeek(); renderShopping(); renderFreeze(); renderIdeas(); renderStock(); renderPlanned(); }
-document.addEventListener("DOMContentLoaded", ()=>{ updateStatus("Verbinde mit Firebase…"); onSnapshot(ref, async snap=>{ if(!snap.exists()){ applying=true; await save(); applying=false; updateStatus("Bereit ✅"); render(); return; } applying=true; const data=snap.data(); window.state={ dishes:Array.isArray(data.dishes)?data.dishes:[], week:Array.isArray(data.week)&&data.week.length===7?data.week:["","","","","","",""], servings:data.servings||2, freeze:Array.isArray(data.freeze)?data.freeze:[], ideas:Array.isArray(data.ideas)?data.ideas:[], stock:Array.isArray(data.stock)?data.stock:[], checked:data.checked&&typeof data.checked==="object"?data.checked:{}, manualShopping:Array.isArray(data.manualShopping)?data.manualShopping:[], shoppingEdits:data.shoppingEdits&&typeof data.shoppingEdits==="object"?data.shoppingEdits:{}, editIndex:null }; applying=false; updateStatus("Synchronisiert ✅"); render(); }); });
+
+function normalize(t){ return String(t || "").trim(); }
+function updateStatus(t){ document.getElementById("status").textContent = t; }
+function parseNumber(v){ return parseFloat(String(v).replace(",", ".")); }
+function isNumeric(v){ return !Number.isNaN(parseNumber(v)); }
+function scaleAmount(amount){
+  if(amount === "" || amount == null) return "";
+  const n = parseNumber(amount);
+  if(Number.isNaN(n)) return amount;
+  const scaled = Math.round((n * (state.servings / 2)) * 100) / 100;
+  return String(scaled).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+}
+function save(){ if(!applying) return setDoc(ref, window.state); }
+function escapeHtml(text){ return String(text || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function jsEscape(text){ return String(text || "").replace(/'/g, "\\'"); }
+function parseIngredients(text){
+  return text.split("\n").map(x => x.trim()).filter(Boolean).map(line => {
+    const p = line.split("|").map(x => x.trim());
+    return {
+      name: normalize(p[0] || ""),
+      amount: normalize(p[1] || ""),
+      unit: normalize(p[2] || ""),
+      area: AREAS.includes(normalize(p[3] || "")) ? normalize(p[3]) : "Sonstiges",
+      fresh: normalize(p[4] || "").toLowerCase() === "frisch"
+    };
+  }).filter(x => x.name);
+}
+function ingredientsToText(items){ return (items || []).map(i => [i.name, i.amount, i.unit, i.area, i.fresh ? "frisch" : ""].join("|")).join("\n"); }
+function ingredientLabel(i){ const qty=[scaleAmount(i.amount),i.unit].filter(Boolean).join(" "); return qty ? `${i.name} (${qty})` : i.name; }
+function ingredientKey(i){ return `${i.name.toLowerCase()}|${(i.unit||"").toLowerCase()}|${(i.area||"Sonstiges").toLowerCase()}`; }
+function stockMatch(item){ return state.stock.find(s => s.name.toLowerCase()===item.name.toLowerCase() && (s.unit||"").toLowerCase()===(item.unit||"").toLowerCase()); }
+
+window.setPersons = function(v){ state.servings = parseInt(v,10) || 2; save(); render(); };
+window.addDish = function(){
+  const name = normalize(document.getElementById("dishName").value);
+  const ingredientsRaw = document.getElementById("dishIngredients").value;
+  const hint = normalize(document.getElementById("dishHint").value);
+  if(!name) return;
+  const dish = { name, ingredients: parseIngredients(ingredientsRaw), hint };
+  if(state.editIndex !== null){
+    const old = state.dishes[state.editIndex]?.name || "";
+    state.dishes[state.editIndex] = dish;
+    state.week = state.week.map(x => x === old ? name : x);
+    state.editIndex = null;
+    document.getElementById("saveDishBtn").textContent = "Speichern";
+    document.getElementById("cancelEditBtn").style.display = "none";
+  } else {
+    state.dishes.push(dish);
+  }
+  document.getElementById("dishName").value = "";
+  document.getElementById("dishIngredients").value = "";
+  document.getElementById("dishHint").value = "";
+  save(); render();
+};
+window.editDish = function(i){
+  const dish = state.dishes[i]; if(!dish) return;
+  document.getElementById("dishName").value = dish.name || "";
+  document.getElementById("dishIngredients").value = ingredientsToText(dish.ingredients || []);
+  document.getElementById("dishHint").value = dish.hint || "";
+  state.editIndex = i;
+  document.getElementById("saveDishBtn").textContent = "Änderungen speichern";
+  document.getElementById("cancelEditBtn").style.display = "inline-block";
+  window.scrollTo({top:0, behavior:"smooth"});
+};
+window.cancelEdit = function(){
+  state.editIndex = null;
+  document.getElementById("dishName").value = "";
+  document.getElementById("dishIngredients").value = "";
+  document.getElementById("dishHint").value = "";
+  document.getElementById("saveDishBtn").textContent = "Speichern";
+  document.getElementById("cancelEditBtn").style.display = "none";
+};
+window.deleteDish = function(i){
+  const removed = state.dishes[i]; if(!removed) return;
+  state.dishes.splice(i,1);
+  state.week = state.week.map(x => x === removed.name ? "" : x);
+  save(); render();
+};
+window.randomWeek = function(){
+  if(!state.dishes.length) return;
+  state.week = DAYS.map(() => state.dishes[Math.floor(Math.random() * state.dishes.length)].name);
+  save(); render();
+};
+window.clearWeek = function(){ state.week = ["","","","","","",""]; save(); render(); };
+window.updateDay = function(i,val){ state.week[i] = val; save(); renderWeek(); renderShopping(); renderPlanned(); };
+window.addFreeze = function(){ const v=normalize(document.getElementById("freezeItem").value); if(!v) return; state.freeze.push(v); document.getElementById("freezeItem").value=""; save(); renderFreeze(); };
+window.deleteFreeze = function(i){ state.freeze.splice(i,1); save(); renderFreeze(); };
+window.addIdea = function(){ const v=normalize(document.getElementById("ideaItem").value); if(!v) return; state.ideas.push(v); document.getElementById("ideaItem").value=""; save(); renderIdeas(); };
+window.deleteIdea = function(i){ state.ideas.splice(i,1); save(); renderIdeas(); };
+window.addStock = function(){
+  const name=normalize(document.getElementById("stockName").value), amount=normalize(document.getElementById("stockAmount").value), unit=normalize(document.getElementById("stockUnit").value);
+  if(!name) return;
+  state.stock.push({name, amount, unit});
+  document.getElementById("stockName").value=""; document.getElementById("stockAmount").value=""; document.getElementById("stockUnit").value="";
+  save(); renderStock(); renderShopping();
+};
+window.deleteStock = function(i){ state.stock.splice(i,1); save(); renderStock(); renderShopping(); };
+window.toggleCheck = function(key){ state.checked[key] = !state.checked[key]; save(); renderShopping(); };
+window.searchGoogle = function(){ const q=normalize(document.getElementById("searchName").value); if(q) window.open("https://www.google.com/search?q=" + encodeURIComponent(q + " rezept"), "_blank"); };
+window.searchChef = function(){ const q=normalize(document.getElementById("searchName").value); if(q) window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(q) + "/Rezepte.html", "_blank"); };
+window.searchThermo = function(){ const q=normalize(document.getElementById("searchName").value); if(q) window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(q), "_blank"); };
+window.googleRecipe = function(name){ window.open("https://www.google.com/search?q=" + encodeURIComponent(name + " rezept"), "_blank"); };
+window.chefRecipe = function(name){ window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(name) + "/Rezepte.html", "_blank"); };
+window.thermomixRecipe = function(name){ window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(name), "_blank"); };
+
+function renderDishes(){
+  const box = document.getElementById("dishList"); box.innerHTML = "";
+  if(!state.dishes.length){ box.innerHTML = "<div class='empty'>Noch keine Gerichte gespeichert.</div>"; return; }
+  state.dishes.forEach((dish,i) => {
+    const preview = (dish.ingredients || []).map(ingredientLabel).join(", ");
+    const div = document.createElement("div");
+    div.className = "box";
+    div.innerHTML = `<div class="title">${escapeHtml(dish.name)}</div>${dish.hint ? `<div class="hint">💡 ${escapeHtml(dish.hint)}</div>` : ""}<div class="meta">${escapeHtml(preview)}</div><div class="actions"><button class="soft small" onclick="editDish(${i})">Bearbeiten</button><button class="soft small" onclick="googleRecipe('${jsEscape(dish.name)}')">Google</button><button class="soft small" onclick="chefRecipe('${jsEscape(dish.name)}')">Chefkoch</button><button class="soft small" onclick="thermomixRecipe('${jsEscape(dish.name)}')">Thermomix</button><button class="danger small" onclick="deleteDish(${i})">Löschen</button></div>`;
+    box.appendChild(div);
+  });
+}
+function renderWeek(){
+  const box = document.getElementById("week"); box.innerHTML = "";
+  DAYS.forEach((day,i) => {
+    const options = state.dishes.map(d => `<option value="${escapeHtml(d.name)}" ${state.week[i]===d.name ? "selected" : ""}>${escapeHtml(d.name)}</option>`).join("");
+    const dish = state.dishes.find(d => d.name === state.week[i]);
+    const div = document.createElement("div");
+    div.className = "weekrow";
+    div.innerHTML = `<div class="title">${day}</div><div class="daycontent"><input value="${escapeHtml(state.week[i] || "")}" oninput="updateDay(${i}, this.value)" placeholder="Gericht"><select onchange="updateDay(${i}, this.value)"><option value="">Gespeichertes Gericht wählen</option>${options}</select>${dish && dish.hint ? `<div class="hint">💡 ${escapeHtml(dish.hint)}</div>` : ""}</div>`;
+    box.appendChild(div);
+  });
+}
+function renderShopping(){
+  const box = document.getElementById("shopping"); box.innerHTML = "";
+  const grouped = {}; AREAS.forEach(a => grouped[a] = []);
+  state.week.forEach(name => {
+    const dish = state.dishes.find(d => d.name === name); if(!dish) return;
+    (dish.ingredients || []).forEach(item => {
+      const key = ingredientKey(item), area = item.area || "Sonstiges", scaled = scaleAmount(item.amount);
+      const existing = grouped[area].find(x => x.key === key);
+      if(existing){
+        if(isNumeric(existing.amount) && isNumeric(scaled)) existing.amount = String(parseNumber(existing.amount) + parseNumber(scaled));
+      } else grouped[area].push({key, name:item.name, amount:scaled, unit:item.unit, fresh:!!item.fresh});
+    });
+  });
+  AREAS.forEach(area => {
+    grouped[area] = grouped[area].map(item => {
+      const stock = stockMatch(item);
+      if(!stock) return item;
+      if(isNumeric(item.amount) && isNumeric(stock.amount)){
+        const diff = parseNumber(item.amount) - parseNumber(stock.amount);
+        if(diff <= 0) return null;
+        return {...item, amount:String(diff)};
+      }
+      return item;
+    }).filter(Boolean);
+  });
+  let has = false;
+  AREAS.forEach(area => {
+    if(!grouped[area].length) return;
+    has = true;
+    const areaDiv = document.createElement("div");
+    areaDiv.className = "area";
+    areaDiv.innerHTML = `<div class="title">${escapeHtml(area)}</div>`;
+    grouped[area].forEach(item => {
+      const key = area + "|" + item.name + "|" + item.amount + "|" + item.unit;
+      const done = !!state.checked[key];
+      const row = document.createElement("div");
+      row.className = "shoprow" + (item.fresh ? " fresh" : "") + (done ? " done" : "");
+      row.style.marginTop = "8px";
+      row.innerHTML = `<input type="checkbox" ${done ? "checked" : ""} onchange="toggleCheck('${jsEscape(key)}')"><div><div class="title">${escapeHtml(item.name)} ${item.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div><div class="meta">${escapeHtml([item.amount, item.unit].filter(Boolean).join(" ") || "ohne Menge")}</div></div>`;
+      areaDiv.appendChild(row);
+    });
+    box.appendChild(areaDiv);
+  });
+  if(!has) box.innerHTML = "<div class='empty'>Noch nichts eingeplant.</div>";
+}
+function renderFreeze(){
+  const box = document.getElementById("freezeList"); box.innerHTML = "";
+  if(!state.freeze.length){ box.innerHTML = "<div class='empty'>Noch nichts eingefroren.</div>"; return; }
+  state.freeze.forEach((item,i) => { const div=document.createElement("div"); div.className="simpleitem"; div.innerHTML=`<span>${escapeHtml(item)}</span><button class="danger small" onclick="deleteFreeze(${i})">Löschen</button>`; box.appendChild(div); });
+}
+function renderIdeas(){
+  const box = document.getElementById("ideaList"); box.innerHTML = "";
+  if(!state.ideas.length){ box.innerHTML = "<div class='empty'>Noch keine Ideen gespeichert.</div>"; return; }
+  state.ideas.forEach((item,i) => { const div=document.createElement("div"); div.className="simpleitem"; div.innerHTML=`<span>${escapeHtml(item)}</span><button class="danger small" onclick="deleteIdea(${i})">Löschen</button>`; box.appendChild(div); });
+}
+function renderStock(){
+  const box = document.getElementById("stockList"); box.innerHTML = "";
+  if(!state.stock.length){ box.innerHTML = "<div class='empty'>Noch kein Vorrat eingetragen.</div>"; return; }
+  state.stock.forEach((item,i) => { const div=document.createElement("div"); div.className="simpleitem"; div.innerHTML=`<span>${escapeHtml(item.name)} – ${escapeHtml([item.amount, item.unit].filter(Boolean).join(" ") || "ohne Menge")}</span><button class="danger small" onclick="deleteStock(${i})">Löschen</button>`; box.appendChild(div); });
+}
+function renderPlanned(){
+  const box = document.getElementById("plannedMeals"); box.innerHTML = "";
+  const planned = state.week.filter(Boolean);
+  if(!planned.length){ box.innerHTML = "<li class='empty'>Noch kein Wochenplan vorhanden.</li>"; return; }
+  planned.forEach(meal => { const li=document.createElement("li"); li.textContent=meal; box.appendChild(li); });
+}
+function render(){
+  document.getElementById("servingsSelect").value = String(state.servings || 2);
+  renderDishes(); renderWeek(); renderShopping(); renderFreeze(); renderIdeas(); renderStock(); renderPlanned();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  updateStatus("Verbinde mit Firebase…");
+  onSnapshot(ref, async (snap) => {
+    if(!snap.exists()){
+      applying = true;
+      await save();
+      applying = false;
+      updateStatus("Bereit ✅");
+      render();
+      return;
+    }
+    applying = true;
+    const data = snap.data();
+    window.state = {
+      dishes: Array.isArray(data.dishes) ? data.dishes : [],
+      week: Array.isArray(data.week) && data.week.length === 7 ? data.week : ["","","","","","",""],
+      servings: data.servings || 2,
+      freeze: Array.isArray(data.freeze) ? data.freeze : [],
+      ideas: Array.isArray(data.ideas) ? data.ideas : [],
+      stock: Array.isArray(data.stock) ? data.stock : [],
+      checked: data.checked && typeof data.checked === "object" ? data.checked : {},
+      editIndex: null
+    };
+    applying = false;
+    updateStatus("Synchronisiert ✅");
+    render();
+  });
+});
 </script>
 </body>
 </html>
