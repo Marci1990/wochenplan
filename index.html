@@ -1,1 +1,321 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>💛 Familie Hanst Wochenplan</title>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyBl3-LMbx6tL5j96sjYvUMXpSF3D8iwS0I",
+authDomain: "wochenplan-hast.firebaseapp.com",
+projectId: "wochenplan-hast",
+storageBucket: "wochenplan-hast.firebasestorage.app",
+messagingSenderId: "909844114392",
+appId: "1:909844114392:web:5554d7fad278c6ce5da0ad"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const docRef = doc(db,"apps","familie-hanst")
+
+window.state={
+dishes:[],
+week:Array(7).fill(""),
+servings:2
+}
+
+window.saveData=async()=>{
+
+await setDoc(docRef,window.state)
+
+}
+
+onSnapshot(docRef,(snap)=>{
+
+if(!snap.exists()) return
+
+window.state=snap.data()
+
+render()
+
+})
+
+</script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#fff7fb;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+margin-bottom:20px;
+border-radius:12px;
+}
+
+button{
+padding:10px;
+background:#ef5f95;
+border:none;
+color:white;
+border-radius:8px;
+cursor:pointer;
+}
+
+input,textarea,select{
+padding:10px;
+margin:5px;
+width:100%;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>💛 Familie Hanst Wochenplan</h1>
+
+<div class="card">
+
+<h2>Personen</h2>
+
+<select onchange="setServings(this.value)">
+<option>1</option>
+<option selected>2</option>
+<option>3</option>
+<option>4</option>
+</select>
+
+</div>
+
+<div class="card">
+
+<h2>Gericht hinzufügen</h2>
+
+<input id="dishName" placeholder="Gericht">
+
+<textarea id="dishIngredients" placeholder="Zutaten (eine pro Zeile)"></textarea>
+
+<button onclick="addDish()">Speichern</button>
+
+</div>
+
+<div class="card">
+
+<h2>Gespeicherte Gerichte</h2>
+
+<div id="dishList"></div>
+
+</div>
+
+<div class="card">
+
+<h2>Wochenplan</h2>
+
+<button onclick="randomWeek()">🎲 Zufallsplan</button>
+
+<div id="week"></div>
+
+</div>
+
+<div class="card">
+
+<h2>Einkaufsliste</h2>
+
+<div id="shopping"></div>
+
+</div>
+
+<script>
+
+const DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"]
+
+function setServings(v){
+
+state.servings=parseInt(v)
+
+saveData()
+
+}
+
+function addDish(){
+
+const name=document.getElementById("dishName").value
+const ingredients=document.getElementById("dishIngredients").value
+
+if(!name) return
+
+state.dishes.push({
+name,
+ingredients
+})
+
+document.getElementById("dishName").value=""
+document.getElementById("dishIngredients").value=""
+
+saveData()
+
+render()
+
+}
+
+function render(){
+
+renderDishes()
+renderWeek()
+renderShopping()
+
+}
+
+function renderDishes(){
+
+const box=document.getElementById("dishList")
+
+box.innerHTML=""
+
+state.dishes.forEach((d,i)=>{
+
+const div=document.createElement("div")
+
+div.innerHTML=`
+
+<strong>${d.name}</strong>
+
+<br>
+
+<button onclick="google('${d.name}')">Google</button>
+<button onclick="chef('${d.name}')">Chefkoch</button>
+<button onclick="thermo('${d.name}')">Thermomix</button>
+<button onclick="deleteDish(${i})">Löschen</button>
+
+`
+
+box.appendChild(div)
+
+})
+
+}
+
+function deleteDish(i){
+
+state.dishes.splice(i,1)
+
+saveData()
+
+render()
+
+}
+
+function renderWeek(){
+
+const box=document.getElementById("week")
+
+box.innerHTML=""
+
+DAYS.forEach((day,i)=>{
+
+const div=document.createElement("div")
+
+div.innerHTML=`
+
+<strong>${day}</strong>
+
+<input value="${state.week[i]||""}" oninput="updateDay(${i},this.value)">
+
+`
+
+box.appendChild(div)
+
+})
+
+}
+
+function updateDay(i,val){
+
+state.week[i]=val
+
+saveData()
+
+}
+
+function randomWeek(){
+
+if(!state.dishes.length) return
+
+state.week=DAYS.map(()=>{
+
+return state.dishes[
+Math.floor(Math.random()*state.dishes.length)
+].name
+
+})
+
+saveData()
+
+render()
+
+}
+
+function renderShopping(){
+
+const box=document.getElementById("shopping")
+
+box.innerHTML=""
+
+let list=[]
+
+state.week.forEach(w=>{
+
+const dish=state.dishes.find(d=>d.name===w)
+
+if(!dish) return
+
+dish.ingredients.split("\n").forEach(i=>{
+
+if(i) list.push(i)
+
+})
+
+})
+
+box.innerHTML=list.join("<br>")
+
+}
+
+function google(name){
+
+window.open("https://www.google.com/search?q="+name+" rezept")
+
+}
+
+function chef(name){
+
+window.open("https://www.chefkoch.de/rs/s0/"+name+"/Rezepte.html")
+
+}
+
+function thermo(name){
+
+window.open("https://www.rezeptwelt.de/suche?q="+name)
+
+}
+
+render()
+
+</script>
+
+</body>
+</html>
