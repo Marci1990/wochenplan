@@ -28,13 +28,16 @@ shoppingOverrides
 
 await supabase
 .from("app_state")
-.upsert({
+.upsert(
+{
 id: APP_STATE_ID,
 data: payload,
 updated_at: new Date().toISOString()
-})
-
+},
+{
+onConflict: "id"
 }
+)
 
 async function loadData(){
 
