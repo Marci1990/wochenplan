@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💛 Familie Hanst Wochenplan</title>
+  <title>💛 Familie Hanst Wochenplan V8</title>
   <style>
     :root{
       --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
@@ -45,13 +45,14 @@
     .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
     .section-title{margin-bottom:8px}
+    .tag{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#f7f7fb;border:1px solid var(--border);margin-right:6px;margin-top:6px}
   </style>
 </head>
 <body>
 <div class="wrap">
   <section class="hero">
     <h1>💛 Familie Hanst Wochenplan</h1>
-    <p>Firebase Sync, Einzel-Tageswürfeln, Vorrat-Abgleich, bearbeitbare Einkaufsliste und Ideen aus Zutaten.</p>
+    <p>Firebase Sync, Einzel-Tageswürfeln, bearbeitbare Einkaufsliste, Vorrat-Abgleich und Rezeptideen aus Zutaten.</p>
   </section>
 
   <div id="status" class="status">Verbinde mit Firebase…</div>
@@ -104,11 +105,11 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
     <section class="card">
       <h2 class="section-title">Einkaufsliste</h2>
-      <div class="small-note">Automatisch aus dem Wochenplan. Manuell hinzufügen und manuelle Artikel bearbeiten.</div>
+      <div class="small-note">Automatisch aus dem Wochenplan erstellt. Manuell hinzufügen und Artikel, Menge und Einheit ändern.</div>
       <div class="row" style="margin-top:12px">
         <input id="shopName" class="grow" placeholder="Artikel">
         <input id="shopAmount" class="w110" placeholder="Menge">
-        <input id="shopUnit" class="w110" placeholder="Einheit">
+        <input id="shopUnit" class="w110" placeholder="Einheit / Stück">
       </div>
       <div class="row">
         <select id="shopArea" class="grow">
@@ -132,11 +133,11 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
   <div class="grid2">
     <section class="card">
       <h2 class="section-title">Vorrat</h2>
-      <div class="small-note">Wird von der Einkaufsliste abgezogen.</div>
+      <div class="small-note">Wird automatisch von der Einkaufsliste abgezogen.</div>
       <div class="row" style="margin-top:12px">
         <input id="stockName" class="grow" placeholder="Artikel">
         <input id="stockAmount" class="w110" placeholder="Menge">
-        <input id="stockUnit" class="w110" placeholder="Einheit">
+        <input id="stockUnit" class="w110" placeholder="Einheit / Stück">
         <button onclick="addStock()">Hinzufügen</button>
       </div>
       <div id="stockList" class="list"></div>
@@ -144,7 +145,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
     <section class="card">
       <h2 class="section-title">Was kann ich aus folgenden Zutaten kochen?</h2>
-      <div class="small-note">Sucht zuerst in deinen gespeicherten Gerichten. Zusätzlich gibt es direkte Web-Rezeptsuche.</div>
+      <div class="small-note">Prüft zuerst deine gespeicherten Gerichte. Zusätzlich gibt es intelligente Ideen aus den eingegebenen Zutaten – ohne Google oder Chefkoch.</div>
       <textarea id="ideaInput" placeholder="z.B.
 Tomaten
 Nudeln
@@ -153,8 +154,6 @@ Hackfleisch"></textarea>
       <div class="row" style="margin-top:10px">
         <button onclick="findIdeas()">Ideen anzeigen</button>
         <button class="soft" onclick="clearIdeas()">Leeren</button>
-        <button class="soft" onclick="searchIdeasGoogle()">Google</button>
-        <button class="soft" onclick="searchIdeasChefkoch()">Chefkoch</button>
       </div>
       <div id="ideaResults" class="list"></div>
     </section>
@@ -186,7 +185,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const ref = doc(db, "apps", "familie-hanst-final-v7");
+const ref = doc(db, "apps", "familie-hanst-v8");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
 
@@ -243,6 +242,98 @@ function stockMatch(item){
     s.name.toLowerCase() === item.name.toLowerCase() &&
     (s.unit || "").toLowerCase() === (item.unit || "").toLowerCase()
   );
+}
+
+function uniqueByNameUnit(items){
+  const map = new Map();
+  items.forEach(item => {
+    const key = (item.name || "").toLowerCase() + "|" + (item.unit || "").toLowerCase();
+    if(!map.has(key)){
+      map.set(key, {...item});
+    } else {
+      const existing = map.get(key);
+      if(isNumeric(existing.amount) && isNumeric(item.amount)){
+        existing.amount = String(parseNumber(existing.amount) + parseNumber(item.amount));
+      }
+      map.set(key, existing);
+    }
+  });
+  return [...map.values()];
+}
+
+function aiRecipeIdeasFromIngredients(ingredients){
+  const set = new Set(ingredients.map(x => x.toLowerCase()));
+  const ideas = [];
+
+  const hasAny = (...items) => items.some(i => set.has(i));
+  const hasAll = (...items) => items.every(i => set.has(i));
+
+  if(hasAll("ei", "eier") || (set.has("eier") && hasAny("käse","schinken","tomaten","zwiebeln"))){
+    ideas.push({
+      name: "Omelette / Rührei-Variante",
+      why: "Passt gut zu Eiern und Resten wie Käse, Schinken, Tomaten oder Zwiebeln."
+    });
+  }
+  if(hasAny("nudeln","spaghetti") && hasAny("tomaten","tomatensoße","passierte tomaten")){
+    ideas.push({
+      name: "Schnelle Tomaten-Nudeln",
+      why: "Nudeln und Tomaten ergeben direkt ein schnelles Pasta-Gericht."
+    });
+  }
+  if(hasAny("brot","toast") && hasAny("käse","schinken","salami")){
+    ideas.push({
+      name: "Überbackene Brote / Toasts",
+      why: "Brot oder Toast mit Käse und Belag lässt sich schnell machen."
+    });
+  }
+  if(hasAny("kartoffeln") && hasAny("zwiebeln","eier","käse")){
+    ideas.push({
+      name: "Kartoffelpfanne",
+      why: "Kartoffeln mit Zwiebeln, Ei oder Käse funktionieren sehr gut zusammen."
+    });
+  }
+  if(hasAny("reis") && hasAny("gemüse","erbsen","mais","paprika","zwiebeln","hähnchen")){
+    ideas.push({
+      name: "Reis-Pfanne",
+      why: "Reis lässt sich sehr gut mit Gemüse oder Hähnchen kombinieren."
+    });
+  }
+  if(hasAny("wraps","tortilla") && hasAny("käse","salat","hähnchen","hackfleisch","tomaten")){
+    ideas.push({
+      name: "Wraps / Quesadillas",
+      why: "Die Zutaten passen super für schnelle gefüllte Wraps."
+    });
+  }
+  if(hasAny("hackfleisch") && hasAny("nudeln","spaghetti","tomaten","tomatensoße")){
+    ideas.push({
+      name: "Hackfleisch-Pasta",
+      why: "Hackfleisch mit Nudeln oder Tomaten ist eine sehr passende Kombi."
+    });
+  }
+  if(hasAny("salat","gurke","tomaten","feta","mozzarella")){
+    ideas.push({
+      name: "Schneller Salat-Teller",
+      why: "Frische Zutaten passen gut als leichter Salat oder Beilage."
+    });
+  }
+  if(hasAny("mehl") && hasAny("milch","eier")){
+    ideas.push({
+      name: "Pfannkuchen / Crêpes",
+      why: "Aus Mehl, Milch und Eiern lässt sich direkt etwas machen."
+    });
+  }
+  if(!ideas.length){
+    ideas.push({
+      name: "Restepfanne",
+      why: "Die Zutaten passen für eine einfache Pfanne oder einen Auflauf mit Gewürzen und Käse."
+    });
+    ideas.push({
+      name: "Gemüse-Nudel- oder Reisgericht",
+      why: "Viele Reste lassen sich schnell mit Nudeln oder Reis kombinieren."
+    });
+  }
+
+  return ideas.slice(0, 5);
 }
 
 window.setPersons = async function(v){
@@ -368,7 +459,7 @@ window.editShop = async function(id){
   if(name === null) return;
   const amount = prompt("Menge", item.amount || "");
   if(amount === null) return;
-  const unit = prompt("Einheit", item.unit || "");
+  const unit = prompt("Einheit / Stück", item.unit || "");
   if(unit === null) return;
   item.name = normalize(name);
   item.amount = normalize(amount);
@@ -404,7 +495,7 @@ window.editStock = async function(id){
   if(name === null) return;
   const amount = prompt("Menge", item.amount || "");
   if(amount === null) return;
-  const unit = prompt("Einheit", item.unit || "");
+  const unit = prompt("Einheit / Stück", item.unit || "");
   if(unit === null) return;
   item.name = normalize(name);
   item.amount = normalize(amount);
@@ -426,27 +517,44 @@ window.findIdeas = function(){
   const box = document.getElementById("ideaResults");
   box.innerHTML = "";
 
-  const matches = state.dishes.map(d => {
-    const score = (d.ingredients || []).filter(i => input.includes(i.name.toLowerCase())).length;
-    const missing = (d.ingredients || []).filter(i => !input.includes(i.name.toLowerCase())).map(i => i.name);
-    return { dish:d, score, total:(d.ingredients || []).length, missing };
-  }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
-
-  if(!matches.length){
-    box.innerHTML = '<div class="empty">Keine passende Idee gefunden. Nutze die Web-Suche unten.</div>';
+  if(!input.length){
+    box.innerHTML = '<div class="empty">Bitte zuerst Zutaten eingeben.</div>';
     return;
   }
 
-  matches.forEach(item => {
+  const savedMatches = state.dishes.map(d => {
+    const score = (d.ingredients || []).filter(i => input.includes(i.name.toLowerCase())).length;
+    const total = (d.ingredients || []).length || 1;
+    const missing = (d.ingredients || []).filter(i => !input.includes(i.name.toLowerCase())).map(i => i.name);
+    return { dish:d, score, total, missing };
+  }).filter(x => x.score > 0).sort((a,b) => b.score - a.score || a.missing.length - b.missing.length);
+
+  if(savedMatches.length){
+    const title = document.createElement("div");
+    title.className = "box";
+    title.innerHTML = `<div class="title">Passende gespeicherte Gerichte</div><div class="meta">Zuerst werden deine eigenen Rezepte vorgeschlagen.</div>`;
+    box.appendChild(title);
+
+    savedMatches.slice(0,5).forEach(item => {
+      const div = document.createElement("div");
+      div.className = "recipehint";
+      div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)} ${item.dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
+        <div class="meta">${item.score} von ${item.total} Zutaten passen</div>
+        ${item.missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(item.missing.join(", "))}</div>` : `<div class="meta">Passt komplett ✅</div>`}`;
+      box.appendChild(div);
+    });
+  }
+
+  const aiIdeas = aiRecipeIdeasFromIngredients(input);
+  const aiHeader = document.createElement("div");
+  aiHeader.className = "box";
+  aiHeader.innerHTML = `<div class="title">Intelligente Zusatz-Ideen</div><div class="meta">Diese Vorschläge werden direkt aus deinen Zutaten abgeleitet.</div>`;
+  box.appendChild(aiHeader);
+
+  aiIdeas.forEach(idea => {
     const div = document.createElement("div");
     div.className = "recipehint";
-    div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)}</div>
-      <div class="meta">${item.score} von ${item.total} Zutaten passen</div>
-      ${item.missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(item.missing.join(", "))}</div>` : `<div class="meta">Passt komplett ✅</div>`}
-      <div class="actions">
-        <button class="soft small" onclick="searchDishName('${jsEscape(item.dish.name)}')">Im Internet suchen</button>
-        <button class="soft small" onclick="searchChefName('${jsEscape(item.dish.name)}')">Chefkoch</button>
-      </div>`;
+    div.innerHTML = `<div class="title">${escapeHtml(idea.name)}</div><div class="meta">${escapeHtml(idea.why)}</div>`;
     box.appendChild(div);
   });
 };
@@ -454,24 +562,6 @@ window.findIdeas = function(){
 window.clearIdeas = function(){
   document.getElementById("ideaInput").value = "";
   document.getElementById("ideaResults").innerHTML = "";
-};
-
-window.searchIdeasGoogle = function(){
-  const q = document.getElementById("ideaInput").value.split("\n").map(x => normalize(x)).filter(Boolean).join(" ");
-  if(q) window.open("https://www.google.com/search?q=" + encodeURIComponent(q + " rezept"), "_blank");
-};
-
-window.searchIdeasChefkoch = function(){
-  const q = document.getElementById("ideaInput").value.split("\n").map(x => normalize(x)).filter(Boolean).join(" ");
-  if(q) window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(q) + "/Rezepte.html", "_blank");
-};
-
-window.searchDishName = function(name){
-  window.open("https://www.google.com/search?q=" + encodeURIComponent(name + " rezept"), "_blank");
-};
-
-window.searchChefName = function(name){
-  window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(name) + "/Rezepte.html", "_blank");
 };
 
 window.searchGoogle = function(){
@@ -487,6 +577,14 @@ window.searchChef = function(){
 window.searchThermo = function(){
   const q = normalize(document.getElementById("searchName").value);
   if(q) window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(q), "_blank");
+};
+
+window.searchDishName = function(name){
+  window.open("https://www.google.com/search?q=" + encodeURIComponent(name + " rezept"), "_blank");
+};
+
+window.searchChefName = function(name){
+  window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(name) + "/Rezepte.html", "_blank");
 };
 
 window.loadExamples = async function(){
@@ -522,8 +620,6 @@ function renderDishes(){
       ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
       <div class="actions">
         <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
-        <button class="soft small" onclick="searchDishName('${jsEscape(d.name)}')">Google</button>
-        <button class="soft small" onclick="searchChefName('${jsEscape(d.name)}')">Chefkoch</button>
         <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
       </div>`;
     box.appendChild(div);
@@ -555,7 +651,7 @@ function renderShop(){
   state.week.forEach(name => {
     const dish = state.dishes.find(d => d.name === name);
     if(!dish) return;
-    (dish.ingredients || []).forEach(i => auto.push({ name:i.name, amount:scaleAmount(i.amount), unit:i.unit, auto:true }));
+    (dish.ingredients || []).forEach(i => auto.push({ name:i.name, amount:scaleAmount(i.amount), unit:i.unit, area:i.area || "Sonstiges", fresh:!!i.fresh, auto:true }));
   });
 
   const reduced = auto.map(item => {
@@ -569,7 +665,7 @@ function renderShop(){
     return item;
   }).filter(Boolean);
 
-  const merged = [...reduced, ...state.shopping.map(x => ({...x, auto:false}))];
+  const merged = uniqueByNameUnit([...reduced, ...state.shopping.map(x => ({...x, auto:false}))]);
 
   if(!merged.length){
     box.innerHTML = '<div class="empty">Noch keine Einkaufsartikel.</div>';
@@ -580,7 +676,7 @@ function renderShop(){
     const label = [item.amount, item.unit].filter(Boolean).join(" ");
     const div = document.createElement("div");
     div.className = "simpleitem";
-    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}${item.auto ? " (auto)" : ""}</span>
+    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}${item.auto ? " (auto)" : ""}${item.fresh ? ' <span class="pill pill-fresh">frisch</span>' : ''}</span>
       <div class="actions">${item.auto ? "" : `<button class="soft small" onclick="editShop('${item.id}')">Ändern</button><button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}</div>`;
     box.appendChild(div);
   });
