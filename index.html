@@ -110,6 +110,7 @@ Hackfleisch"></textarea>
     <section class="card">
       <h2 class="section-title">Gericht hinzufügen / bearbeiten</h2>
       <input id="dishName" placeholder="Gericht">
+      <div class="row"><input id="importUrl" placeholder="Rezept URL einfügen (Chefkoch, Blog, etc.)"><button type="button" class="soft small" onclick="importRecipe()">🌐 Rezept importieren</button></div>
       <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile:
 Name|Menge|Einheit|Bereich|frisch
 
@@ -121,6 +122,9 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
+      <button type="button" class="soft small" onclick="scanRecipeImage()">📷 Zutaten aus Foto lesen (Beta)</button>
+      <input id="dishDocFile" type="file" accept=".pdf,.doc,.docx,.txt">
+      <div class="small-note">Optional kannst du auch eine Rezept‑Datei (PDF, DOC, TXT) anhängen.</div>
       <div class="small-note">Bei Foto-Dateien wird das Bild automatisch verkleinert und komprimiert, damit Firebase es speichern kann.</div>
       <div class="row">
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
@@ -492,6 +496,7 @@ function renderTodayCard(){
     ${dish.hint ? `<div class="hint">${escapeHtml(dish.hint)}</div>` : ""}
     <div class="meta">${escapeHtml(ingredients)}</div>
     ${dish.image ? `<img class="recipe-image" src="${dish.image}" alt="Rezeptbild">` : ""}
+    ${dish.doc ? `<div class="actions"><a href="${dish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
   `;
 }
 
@@ -594,8 +599,19 @@ window.addDish = async function(){
   const file = document.getElementById("dishImageFile").files[0];
   if(!name) return;
 
+  const docFile = document.getElementById("dishDocFile").files[0];
+  window._lastDoc = "";
+  if(docFile){
+    const reader = new FileReader();
+    await new Promise(res=>{
+      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
+      reader.readAsDataURL(docFile);
+    });
+  }
+
+
   const finish = async (img) => {
-    const dish = { name, hint, image: img || imageUrl || "", favorite, ingredients };
+    const dish = { name, hint, image: img || imageUrl || "", doc: window._lastDoc || "", favorite, ingredients };
     if(state.editIndex !== null){
       const old = state.dishes[state.editIndex]?.name || "";
       state.dishes[state.editIndex] = dish;
@@ -751,6 +767,17 @@ window.addShop = async function(){
   const area = normalize(document.getElementById("shopArea").value) || "Sonstiges";
   const fresh = document.getElementById("shopFresh").checked;
   if(!name) return;
+
+  const docFile = document.getElementById("dishDocFile").files[0];
+  window._lastDoc = "";
+  if(docFile){
+    const reader = new FileReader();
+    await new Promise(res=>{
+      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
+      reader.readAsDataURL(docFile);
+    });
+  }
+
   state.shopping.push({ id: Date.now().toString(), name, amount, unit, area, fresh });
   document.getElementById("shopName").value = "";
   document.getElementById("shopAmount").value = "";
@@ -796,6 +823,17 @@ window.addStock = async function(){
   const amount = normalize(document.getElementById("stockAmount").value);
   const unit = normalize(document.getElementById("stockUnit").value);
   if(!name) return;
+
+  const docFile = document.getElementById("dishDocFile").files[0];
+  window._lastDoc = "";
+  if(docFile){
+    const reader = new FileReader();
+    await new Promise(res=>{
+      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
+      reader.readAsDataURL(docFile);
+    });
+  }
+
   state.stock.push({ id: Date.now().toString(), name, amount, unit });
   document.getElementById("stockName").value = "";
   document.getElementById("stockAmount").value = "";
@@ -837,6 +875,17 @@ window.addFreeze = async function(){
   const amount = normalize(document.getElementById("freezeAmount").value);
   const unit = normalize(document.getElementById("freezeUnit").value);
   if(!name) return;
+
+  const docFile = document.getElementById("dishDocFile").files[0];
+  window._lastDoc = "";
+  if(docFile){
+    const reader = new FileReader();
+    await new Promise(res=>{
+      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
+      reader.readAsDataURL(docFile);
+    });
+  }
+
   state.freezer.push({ id: Date.now().toString(), name, amount, unit });
   document.getElementById("freezeName").value = "";
   document.getElementById("freezeAmount").value = "";
@@ -973,9 +1022,11 @@ function renderDishes(){
       ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
       <div class="meta">${escapeHtml(preview)}</div>
       ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
+      ${d.doc ? `<div class="actions"><a href="${d.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
       <div class="actions">
         <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
         <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
+        <button class="soft small" onclick="duplicateDish(${i})">Duplizieren</button>
         <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
       </div>`;
     box.appendChild(div);
@@ -1144,6 +1195,77 @@ onSnapshot(ref, snap => {
   updateStatus("Synchronisiert ✅");
   render();
 });
+
+
+async function scanRecipeImage(){
+  const file = document.getElementById("dishImageFile").files[0];
+  if(!file){
+    alert("Bitte zuerst ein Foto auswählen.");
+    return;
+  }
+  const status = document.getElementById("status");
+  status.textContent = "Lese Text aus Bild…";
+
+  const script = document.createElement("script");
+  script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+  script.onload = async () => {
+    const { createWorker } = Tesseract;
+    const worker = await createWorker("deu");
+    const { data } = await worker.recognize(file);
+    await worker.terminate();
+
+    const lines = data.text.split("\n").map(x=>x.trim()).filter(x=>x.length>2);
+    const textarea = document.getElementById("dishIngredients");
+    textarea.value = lines.join("\n");
+
+    status.textContent = "Text erkannt – bitte Zutaten kurz prüfen.";
+  };
+  document.body.appendChild(script);
+}
+
+window.duplicateDish = async function(i){
+  const dish = state.dishes[i];
+  if(!dish) return;
+  const copy = JSON.parse(JSON.stringify(dish));
+  copy.name = dish.name + " Kopie";
+  state.dishes.push(copy);
+  await save();
+  render();
+};
+
+
+window.importRecipe = async function(){
+  const url = document.getElementById("importUrl").value.trim();
+  if(!url){ alert("Bitte eine Rezept URL einfügen."); return; }
+  const status = document.getElementById("status");
+  status.textContent = "Lade Rezept…";
+  try{
+    const proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+    const res = await fetch(proxy);
+    const html = await res.text();
+
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi,"")
+      .replace(/<style[\s\S]*?<\/style>/gi,"")
+      .replace(/<[^>]+>/g,"\n")
+      .split("\n")
+      .map(x=>x.trim())
+      .filter(x=>x.length>2);
+
+    const ingredients = text.filter(x =>
+      /(g|kg|ml|l|stück|tl|el)/i.test(x)
+    ).slice(0,25);
+
+    if(ingredients.length){
+      document.getElementById("dishIngredients").value = ingredients.join("\n");
+      status.textContent = "Zutaten importiert – bitte kurz prüfen.";
+    }else{
+      status.textContent = "Keine Zutaten automatisch erkannt.";
+    }
+  }catch(e){
+    status.textContent = "Import fehlgeschlagen.";
+  }
+};
 
 render();
 </script>
