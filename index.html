@@ -24,21 +24,21 @@ appId: "1:909844114392:web:5554d7fad278c6ce5da0ad"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const docRef = doc(db,"apps","familie-hanst")
+const ref = doc(db,"apps","familie-hanst")
 
 window.state={
 dishes:[],
-week:Array(7).fill(""),
+week:["","","","","","",""],
 servings:2
 }
 
-window.saveData=async()=>{
+async function save(){
 
-await setDoc(docRef,window.state)
+await setDoc(ref,state)
 
 }
 
-onSnapshot(docRef,(snap)=>{
+onSnapshot(ref,(snap)=>{
 
 if(!snap.exists()) return
 
@@ -47,6 +47,8 @@ window.state=snap.data()
 render()
 
 })
+
+window.save=save
 
 </script>
 
@@ -70,7 +72,7 @@ padding:10px;
 background:#ef5f95;
 border:none;
 color:white;
-border-radius:8px;
+border-radius:6px;
 cursor:pointer;
 }
 
@@ -92,11 +94,13 @@ width:100%;
 
 <h2>Personen</h2>
 
-<select onchange="setServings(this.value)">
+<select onchange="setPersons(this.value)">
+
 <option>1</option>
 <option selected>2</option>
 <option>3</option>
 <option>4</option>
+
 </select>
 
 </div>
@@ -143,11 +147,11 @@ width:100%;
 
 const DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"]
 
-function setServings(v){
+function setPersons(v){
 
 state.servings=parseInt(v)
 
-saveData()
+save()
 
 }
 
@@ -166,7 +170,7 @@ ingredients
 document.getElementById("dishName").value=""
 document.getElementById("dishIngredients").value=""
 
-saveData()
+save()
 
 render()
 
@@ -213,7 +217,7 @@ function deleteDish(i){
 
 state.dishes.splice(i,1)
 
-saveData()
+save()
 
 render()
 
@@ -247,7 +251,7 @@ function updateDay(i,val){
 
 state.week[i]=val
 
-saveData()
+save()
 
 }
 
@@ -263,7 +267,7 @@ Math.floor(Math.random()*state.dishes.length)
 
 })
 
-saveData()
+save()
 
 render()
 
