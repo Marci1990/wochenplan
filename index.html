@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💛 Familie Hanst Wochenplan V14</title>
+  <title>💛 Familie Hanst Wochenplan FINAL</title>
   <style>
     :root{
       --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
@@ -49,27 +49,26 @@
     .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
-  
-/* MOBILE OPTIMIERUNG */
-@media (max-width:700px){
-  body{font-size:16px}
-  button{padding:14px 16px;font-size:15px}
-  input,textarea,select{font-size:16px;padding:14px}
-  .weekrow{grid-template-columns:1fr}
-  .actions{flex-wrap:wrap}
-  .hero{padding:18px}
-  .card{padding:14px}
-  .title{font-size:16px}
-  .shop-edit{font-size:16px}
-}
-
-</style>
+    .checkline{display:flex;align-items:flex-start;gap:10px}
+    .checkline input[type="checkbox"]{width:auto;margin-top:4px}
+    .done{opacity:.6}
+    .done .shop-edit{text-decoration:line-through}
+    @media (max-width:700px){
+      body{font-size:16px}
+      button{padding:14px 16px;font-size:15px}
+      input,textarea,select{font-size:16px;padding:14px}
+      .hero{padding:18px}
+      .card{padding:14px}
+      .title{font-size:16px}
+      .shop-edit{font-size:16px}
+    }
+  </style>
 </head>
 <body>
 <div class="wrap">
   <section class="hero">
     <h1>💛 Familie Hanst Wochenplan</h1>
-    <p>V14 mit Bild-Fix, Sonderoptionen im Wochenplan und allem aus deiner Endversion.</p>
+    <p>Stabile Final-Version mit Firebase, Meal-Prep, Resteverwertung, Bild/PDF-Rezepten und Einkaufsliste zum Abhaken.</p>
   </section>
 
   <div id="status" class="status">Verbinde mit Firebase…</div>
@@ -80,6 +79,7 @@
       <button onclick="randomWeek()">🎲 Zufallsplan</button>
       <button class="soft" onclick="favoriteWeek()">⭐ Favoriten würfeln</button>
       <button class="soft" onclick="mealPrepPlan()">🥘 Meal-Prep</button>
+      <button class="soft" onclick="autoWeek()">🤖 1-Klick Wochenplan</button>
       <button class="soft" onclick="showTodayCooking()">🍳 Heute kochen</button>
       <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
       <button class="soft" onclick="loadExamples()">Beispiele laden</button>
@@ -126,7 +126,10 @@ Hackfleisch"></textarea>
     <section class="card">
       <h2 class="section-title">Gericht hinzufügen / bearbeiten</h2>
       <input id="dishName" placeholder="Gericht">
-      <div class="row"><input id="importUrl" placeholder="Rezept URL einfügen (Chefkoch, Blog, etc.)"><button type="button" class="soft small" onclick="importRecipe()">🌐 Rezept importieren</button></div>
+      <div class="row">
+        <input id="importUrl" placeholder="Rezept URL einfügen (Chefkoch, Blog, etc.)">
+        <button type="button" class="soft small" onclick="importRecipe()">🌐 Rezept importieren</button>
+      </div>
       <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile:
 Name|Menge|Einheit|Bereich|frisch
 
@@ -134,20 +137,18 @@ Beispiel:
 Hackfleisch|500|g|Fleisch & Fisch|frisch
 Tomatensoße|2|Gläser|Trockenwaren|
 Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
+      <button type="button" class="soft small" onclick="scanRecipeImage()">📷 Zutaten aus Foto lesen (Beta)</button>
       <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
       <input id="dishCategory" placeholder="Kategorie z.B. Pasta, Ofen, Pfanne, Salat">
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
-      <button type="button" class="soft small" onclick="scanRecipeImage()">📷 Zutaten aus Foto lesen (Beta)</button>
       <input id="dishDocFile" type="file" accept=".pdf,.doc,.docx,.txt">
-      <div class="small-note">Optional kannst du auch eine Rezept‑Datei (PDF, DOC, TXT) anhängen.</div>
-      <div class="small-note">Bei Foto-Dateien wird das Bild automatisch verkleinert und komprimiert, damit Firebase es speichern kann.</div>
+      <div class="small-note">Optional kannst du Bild und Rezept-Datei anhängen. Bilder werden verkleinert, damit Firebase sie stabil speichern kann.</div>
       <div class="row">
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
         <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
       </div>
-      <div class="small-note">Externe KI wie ChatGPT in der App braucht einen eigenen API-Schlüssel. Diese Version funktioniert direkt ohne Schlüssel und macht gute lokale Vorschläge.</div>
     </section>
 
     <section class="card">
@@ -166,9 +167,9 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
     <section class="card">
       <h2 class="section-title">Einkaufsliste</h2>
-      <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
+      <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern und beim Einkaufen abhaken.</div>
       <div class="row" style="margin-top:12px">
-        <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
+        <input id="shopQuick" class="grow" style="font-size:16px" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
         <button onclick="quickAddShopButton()">Schnell hinzufügen</button>
       </div>
       <div class="row">
@@ -179,13 +180,13 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <div class="row">
         <select id="shopArea" class="grow">
           <option>Obst & Gemüse</option>
-          <option>Kühlregal</option>
+          <option>Bäckerei</option>
           <option>Fleisch & Fisch</option>
+          <option>Kühlregal</option>
           <option>Tiefkühl</option>
           <option>Trockenwaren</option>
           <option>Gewürze</option>
           <option>Getränke</option>
-          <option>Bäckerei</option>
           <option selected>Sonstiges</option>
         </select>
         <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
@@ -247,19 +248,20 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const ref = doc(db, "apps", "familie-hanst-v14");
+const ref = doc(db, "apps", "familie-hanst-final-stabil");
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 const SPECIAL_MEALS = ["🍽️ Essen gehen","🛵 Essen bestellen","🥡 Reste essen"];
-const AREAS = ["Obst & Gemüse","Kühlregal","Fleisch & Fisch","Tiefkühl","Trockenwaren","Gewürze","Getränke","Bäckerei","Sonstiges"];
+const SUPERMARKET_ORDER = ["Obst & Gemüse","Bäckerei","Fleisch & Fisch","Kühlregal","Tiefkühl","Trockenwaren","Getränke","Sonstiges"];
+const AREAS = SUPERMARKET_ORDER.concat(["Gewürze"]);
 const AREA_TO_SUPERMARKET = {
   "Obst & Gemüse":"Obst & Gemüse",
-  "Kühlregal":"Kühlregal",
+  "Bäckerei":"Bäckerei",
   "Fleisch & Fisch":"Fleisch & Fisch",
+  "Kühlregal":"Kühlregal",
   "Tiefkühl":"Tiefkühl",
   "Trockenwaren":"Trockenwaren",
   "Gewürze":"Trockenwaren",
   "Getränke":"Getränke",
-  "Bäckerei":"Bäckerei",
   "Sonstiges":"Sonstiges"
 };
 
@@ -271,6 +273,7 @@ let state = {
   stock: [],
   freezer: [],
   shoppingEdits: {},
+  shoppingChecked: {},
   editIndex: null
 };
 
@@ -284,11 +287,10 @@ function ingredientToken(value){
   return normalize(String(value || ""))
     .toLowerCase()
     .replace(/[.,;:!?]/g, "")
-    .replace(/\b(tomaten|tomate)\b/g, "tomate")
+    .replace(/\b(tomaten|tomate|cherrytomaten)\b/g, "tomate")
     .replace(/\b(zwiebeln|zwiebel)\b/g, "zwiebel")
     .replace(/\b(eier|ei)\b/g, "ei")
-    .replace(/\b(nudeln|nudel)\b/g, "nudel")
-    .replace(/\b(spaghetti)\b/g, "nudel")
+    .replace(/\b(nudeln|nudel|spaghetti)\b/g, "nudel")
     .replace(/\b(kartoffeln|kartoffel)\b/g, "kartoffel")
     .replace(/\b(passierte tomaten|tomatensoße|tomatensosse)\b/g, "tomate")
     .replace(/\b(bohnen)\b/g, "bohne")
@@ -370,13 +372,11 @@ function aiRecipeIdeasFromIngredients(ingredients){
   if(hasAny("salat","gurke","tomate","feta","mozzarella")) ideas.push({name:"Großer Salat-Teller", why:"Frische Zutaten passen gut als leichter Salat oder Beilage."});
   if(hasAll("mehl","milch","ei")) ideas.push({name:"Pfannkuchen", why:"Mehl, Milch und Eier sind direkt die Basis dafür."});
   if(hasAny("bohne","mais","tomate") && hasAny("reis","wrap")) ideas.push({name:"Mexikanische Pfanne", why:"Bohnen, Mais und Tomaten passen gut für eine würzige Resteküche."});
-
   if(!ideas.length){
     ideas.push({name:"Restepfanne", why:"Mit deinen Zutaten passt wahrscheinlich eine Pfanne mit Gewürzen und Käse."});
     ideas.push({name:"Nudel- oder Reisgericht", why:"Viele Zutaten lassen sich schnell mit Nudeln oder Reis kombinieren."});
     ideas.push({name:"Ofenauflauf", why:"Verschiedene Reste lassen sich gut mit Käse überbacken."});
   }
-
   return ideas.slice(0, 6);
 }
 
@@ -386,13 +386,7 @@ function parseQuickShop(text){
   const maybeAmount = parts[parts.length-2];
   const maybeUnit = parts[parts.length-1];
   if(!Number.isNaN(parseNumber(maybeAmount))){
-    return {
-      name: normalize(parts.slice(0, -2).join(" ")),
-      amount: normalize(maybeAmount),
-      unit: normalize(maybeUnit),
-      area: "Sonstiges",
-      fresh: false
-    };
+    return {name: normalize(parts.slice(0, -2).join(" ")), amount: normalize(maybeAmount), unit: normalize(maybeUnit), area: "Sonstiges", fresh: false};
   }
   return {name:text, amount:"", unit:"", area:"Sonstiges", fresh:false};
 }
@@ -431,12 +425,7 @@ function smartWeekPool(){
 }
 
 function getAvailableIngredientInput(){
-  const entered = document.getElementById("ideaInput").value
-    .toLowerCase()
-    .split("\n")
-    .map(x => x.trim())
-    .filter(Boolean);
-
+  const entered = document.getElementById("ideaInput").value.toLowerCase().split("\n").map(x => x.trim()).filter(Boolean);
   const stock = (state.stock || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
   const freezer = (state.freezer || []).map(x => String(x.name || "").toLowerCase()).filter(Boolean);
   return [...new Set([...entered, ...stock, ...freezer].map(ingredientToken).filter(Boolean))];
@@ -451,7 +440,7 @@ function specialMealBadge(name){
   return SPECIAL_MEALS.includes(name) ? `<span class="pill pill-special">Sonderoption</span>` : "";
 }
 
-async function compressImageFile(file, maxSide = 900, quality = 0.72){
+async function compressImageFile(file, maxSide = 850, quality = 0.68){
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => resolve(e.target.result);
@@ -474,37 +463,39 @@ async function compressImageFile(file, maxSide = 900, quality = 0.72){
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, width, height);
+  canvas.getContext("2d").drawImage(img, 0, 0, width, height);
 
   return canvas.toDataURL("image/jpeg", quality);
+}
+
+function autoCategoryFromDish(name, ingredientsText){
+  const base = (name + " " + ingredientsText).toLowerCase();
+  if(/nudel|spaghetti|pasta/.test(base)) return "Pasta";
+  if(/auflauf|ofen|lasagne|überback/.test(base)) return "Ofen";
+  if(/salat|feta|gurke|tomate/.test(base)) return "Salat";
+  if(/reis/.test(base)) return "Reis";
+  if(/suppe|eintopf/.test(base)) return "Suppe";
+  if(/wrap|tortilla/.test(base)) return "Wraps";
+  if(/kartoffel/.test(base)) return "Kartoffeln";
+  return "Pfanne";
 }
 
 function renderTodayCard(){
   const card = document.getElementById("todayCard");
   const idx = getTodayIndex();
-  const dayName = DAYS[idx];
   const planned = state.week[idx];
+  const dayName = DAYS[idx];
   const dish = state.dishes.find(d => d.name === planned);
 
-  if(!planned){
-    card.style.display = "none";
-    card.innerHTML = "";
-    return;
-  }
+  if(!planned){ card.style.display = "none"; card.innerHTML = ""; return; }
 
   if(SPECIAL_MEALS.includes(planned)){
     card.style.display = "block";
-    card.innerHTML = `<h2 class="section-title">🍳 Heute: ${escapeHtml(dayName)}</h2>
-      <div class="title">${escapeHtml(planned)} ${specialMealBadge(planned)}</div>`;
+    card.innerHTML = `<h2 class="section-title">🍳 Heute: ${escapeHtml(dayName)}</h2><div class="title">${escapeHtml(planned)} ${specialMealBadge(planned)}</div>`;
     return;
   }
 
-  if(!dish){
-    card.style.display = "none";
-    card.innerHTML = "";
-    return;
-  }
+  if(!dish){ card.style.display = "none"; card.innerHTML = ""; return; }
 
   const ingredients = (dish.ingredients || []).map(ingredientLabel).join(", ");
   card.style.display = "block";
@@ -513,8 +504,7 @@ function renderTodayCard(){
     ${dish.hint ? `<div class="hint">${escapeHtml(dish.hint)}</div>` : ""}
     <div class="meta">${escapeHtml(ingredients)}</div>
     ${dish.image ? `<img class="recipe-image" src="${dish.image}" alt="Rezeptbild">` : ""}
-    ${dish.doc ? `<div class="actions"><a href="${dish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
-  `;
+    ${dish.doc ? `<div class="actions"><a href="${dish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}`;
 }
 
 window.showTodayCooking = function(){
@@ -530,11 +520,7 @@ window.showTodayCooking = function(){
 function renderLeftoverIdeas(){
   const box = document.getElementById("leftoverIdeas");
   box.innerHTML = "";
-
-  const available = [...new Set([
-    ...(state.stock || []).map(x => ingredientToken(x.name)),
-    ...(state.freezer || []).map(x => ingredientToken(x.name))
-  ])].filter(Boolean);
+  const available = [...new Set([...(state.stock || []).map(x => ingredientToken(x.name)), ...(state.freezer || []).map(x => ingredientToken(x.name))])].filter(Boolean);
 
   if(!available.length){
     box.innerHTML = '<div class="empty">Trage zuerst etwas in Vorrat oder Gefrierschrank ein.</div>';
@@ -555,8 +541,7 @@ function renderLeftoverIdeas(){
       box.appendChild(div);
     });
   } else {
-    const ideas = aiRecipeIdeasFromIngredients(available);
-    ideas.forEach(idea => {
+    aiRecipeIdeasFromIngredients(available).forEach(idea => {
       const div = document.createElement("div");
       div.className = "recipehint";
       div.innerHTML = `<div class="title">${escapeHtml(idea.name)}</div><div class="meta">${escapeHtml(idea.why)}</div>`;
@@ -590,6 +575,7 @@ window.restoreBackup = function(event){
         stock: Array.isArray(data.stock) ? data.stock : [],
         freezer: Array.isArray(data.freezer) ? data.freezer : [],
         shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
+        shoppingChecked: data.shoppingChecked && typeof data.shoppingChecked === "object" ? data.shoppingChecked : {},
         editIndex: null
       };
       await save();
@@ -607,29 +593,70 @@ window.setPersons = async function(v){
   render();
 };
 
+window.scanRecipeImage = async function(){
+  const file = document.getElementById("dishImageFile").files[0];
+  if(!file){ alert("Bitte zuerst ein Foto auswählen."); return; }
+  updateStatus("Lese Text aus Bild…");
+  const script = document.createElement("script");
+  script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+  script.onload = async () => {
+    const { createWorker } = Tesseract;
+    const worker = await createWorker("deu");
+    const { data } = await worker.recognize(file);
+    await worker.terminate();
+    const lines = data.text.split("\n").map(x=>x.trim()).filter(x=>x.length>2);
+    document.getElementById("dishIngredients").value = lines.join("\n");
+    updateStatus("Text erkannt – bitte Zutaten kurz prüfen.");
+  };
+  document.body.appendChild(script);
+};
+
+window.importRecipe = async function(){
+  const url = document.getElementById("importUrl").value.trim();
+  if(!url){ alert("Bitte eine Rezept URL einfügen."); return; }
+  updateStatus("Lade Rezept…");
+  try{
+    const proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+    const res = await fetch(proxy);
+    const html = await res.text();
+    const text = html.replace(/<script[\s\S]*?<\/script>/gi,"").replace(/<style[\s\S]*?<\/style>/gi,"").replace(/<[^>]+>/g,"\n").split("\n").map(x=>x.trim()).filter(x=>x.length>2);
+    const ingredients = text.filter(x => /(g|kg|ml|l|stück|tl|el)/i.test(x)).slice(0,25);
+    if(ingredients.length){
+      document.getElementById("dishIngredients").value = ingredients.join("\n");
+      updateStatus("Zutaten importiert – bitte kurz prüfen.");
+    }else{
+      updateStatus("Keine Zutaten automatisch erkannt.");
+    }
+  }catch(e){
+    updateStatus("Import fehlgeschlagen.");
+  }
+};
+
 window.addDish = async function(){
   const name = normalize(document.getElementById("dishName").value);
   const hint = normalize(document.getElementById("dishHint").value);
   let category = normalize(document.getElementById("dishCategory").value);
   const imageUrl = normalize(document.getElementById("dishImageUrl").value);
   const favorite = document.getElementById("dishFavorite").checked;
-  const ingredients = parseIngredients(document.getElementById("dishIngredients").value);
-  const file = document.getElementById("dishImageFile").files[0];
+  const ingredientsText = document.getElementById("dishIngredients").value;
+  const ingredients = parseIngredients(ingredientsText);
+  const imageFile = document.getElementById("dishImageFile").files[0];
+  const docFile = document.getElementById("dishDocFile").files[0];
   if(!name) return;
 
-  const docFile = document.getElementById("dishDocFile").files[0];
-  window._lastDoc = "";
+  let docData = "";
   if(docFile){
-    const reader = new FileReader();
-    await new Promise(res=>{
-      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
+    docData = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
       reader.readAsDataURL(docFile);
     });
   }
 
-
   const finish = async (img) => {
-    const dish = { name, hint, image: img || imageUrl || "", doc: window._lastDoc || "", favorite, ingredients };
+    if(!category) category = autoCategoryFromDish(name, ingredientsText);
+    const dish = { name, hint, category, image: img || imageUrl || "", doc: docData, favorite, ingredients };
     if(state.editIndex !== null){
       const old = state.dishes[state.editIndex]?.name || "";
       state.dishes[state.editIndex] = dish;
@@ -646,14 +673,15 @@ window.addDish = async function(){
     document.getElementById("dishCategory").value = "";
     document.getElementById("dishImageUrl").value = "";
     document.getElementById("dishImageFile").value = "";
+    document.getElementById("dishDocFile").value = "";
     document.getElementById("dishFavorite").checked = false;
     await save();
     render();
   };
 
   try{
-    if(file){
-      const compressed = await compressImageFile(file);
+    if(imageFile){
+      const compressed = await compressImageFile(imageFile);
       await finish(compressed);
     } else {
       await finish("");
@@ -672,6 +700,7 @@ window.editDish = function(i){
   document.getElementById("dishCategory").value = dish.category || "";
   document.getElementById("dishImageUrl").value = dish.image && !String(dish.image).startsWith("data:") ? dish.image : "";
   document.getElementById("dishImageFile").value = "";
+  document.getElementById("dishDocFile").value = "";
   document.getElementById("dishFavorite").checked = !!dish.favorite;
   state.editIndex = i;
   document.getElementById("saveDishBtn").textContent = "Änderungen speichern";
@@ -684,9 +713,10 @@ window.cancelEdit = function(){
   document.getElementById("dishName").value = "";
   document.getElementById("dishIngredients").value = "";
   document.getElementById("dishHint").value = "";
-    document.getElementById("dishCategory").value = "";
+  document.getElementById("dishCategory").value = "";
   document.getElementById("dishImageUrl").value = "";
   document.getElementById("dishImageFile").value = "";
+  document.getElementById("dishDocFile").value = "";
   document.getElementById("dishFavorite").checked = false;
   document.getElementById("saveDishBtn").textContent = "Speichern";
   document.getElementById("cancelEditBtn").style.display = "none";
@@ -697,6 +727,30 @@ window.toggleFavorite = async function(i){
   state.dishes[i].favorite = !state.dishes[i].favorite;
   await save();
   renderDishes();
+};
+
+window.duplicateDish = async function(i){
+  const dish = state.dishes[i];
+  if(!dish) return;
+  const copy = JSON.parse(JSON.stringify(dish));
+  copy.name = dish.name + " Kopie";
+  state.dishes.push(copy);
+  await save();
+  render();
+};
+
+window.showMissingForDish = function(i){
+  const card = document.getElementById("missingCard");
+  const dish = state.dishes[i];
+  if(!dish){ card.style.display = "none"; return; }
+  const owned = [...(state.stock || []).map(x => ingredientToken(x.name)), ...(state.freezer || []).map(x => ingredientToken(x.name))];
+  const missing = (dish.ingredients || []).filter(x => !owned.includes(ingredientToken(x.name)));
+  card.style.display = "block";
+  card.innerHTML = `<h2 class="section-title">🛒 Was fehlt für ${escapeHtml(dish.name)}?</h2>
+    ${missing.length
+      ? `<div class="list">${missing.map(x => `<div class="box"><div class="title">${escapeHtml(x.name)}</div><div class="meta">${escapeHtml([scaleAmount(x.amount), x.unit].filter(Boolean).join(" "))}</div></div>`).join("")}</div>`
+      : `<div class="hint">Alles da oder im Vorrat/Gefrierschrank vorhanden ✅</div>`}`;
+  card.scrollIntoView({behavior:"smooth", block:"start"});
 };
 
 window.deleteDish = async function(i){
@@ -718,18 +772,34 @@ window.randomWeek = async function(){
 
 window.favoriteWeek = async function(){
   const favs = state.dishes.filter(d => d.favorite);
-  if(!favs.length){
-    alert("Noch keine Favoriten gesetzt.");
-    return;
-  }
+  if(!favs.length){ alert("Noch keine Favoriten gesetzt."); return; }
   state.week = DAYS.map(() => favs[Math.floor(Math.random()*favs.length)].name);
   await save();
   render();
 };
 
-window.smartWeek = async function(){
+window.mealPrepPlan = async function(){
   if(!state.dishes.length) return;
-  state.week = smartWeekPool();
+  const favs = state.dishes.filter(d => d.favorite);
+  const pool = favs.length ? favs : state.dishes;
+  const first = pool[Math.floor(Math.random()*pool.length)];
+  const second = pool[Math.floor(Math.random()*pool.length)];
+  state.week = [first.name, first.name, second.name, second.name, "", "🍽️ Essen gehen", "🥡 Reste essen"];
+  await save();
+  render();
+};
+
+window.autoWeek = async function(){
+  if(!state.dishes.length){ alert("Bitte zuerst ein paar Gerichte speichern."); return; }
+  const have = [...(state.stock||[]).map(x=>ingredientToken(x.name)), ...(state.freezer||[]).map(x=>ingredientToken(x.name))];
+  const scored = state.dishes.map(d => {
+    const ing = (d.ingredients||[]).map(i=>ingredientToken(i.name));
+    const score = ing.filter(x=>have.includes(x)).length + (d.favorite ? 2 : 0);
+    return {dish:d, score};
+  }).sort((a,b)=>b.score-a.score).map(x=>x.dish);
+  const pick = scored.length >= 5 ? scored.slice(0,5) : state.dishes;
+  const r = arr => arr[Math.floor(Math.random()*arr.length)];
+  state.week = [r(pick).name, r(pick).name, r(pick).name, r(pick).name, r(pick).name, "🍽️ Essen gehen", "🥡 Reste essen"];
   await save();
   render();
 };
@@ -740,9 +810,7 @@ window.rollDay = async function(i){
   const dish = pool[Math.floor(Math.random()*pool.length)];
   state.week[i] = dish.name;
   await save();
-  renderWeek();
-  renderShop();
-  renderTodayCard();
+  render();
 };
 
 window.clearWeek = async function(){
@@ -754,9 +822,7 @@ window.clearWeek = async function(){
 window.updateDay = async function(i, val){
   state.week[i] = val;
   await save();
-  renderWeek();
-  renderShop();
-  renderTodayCard();
+  render();
 };
 
 window.quickAddShop = async function(e){
@@ -788,17 +854,6 @@ window.addShop = async function(){
   const area = normalize(document.getElementById("shopArea").value) || "Sonstiges";
   const fresh = document.getElementById("shopFresh").checked;
   if(!name) return;
-
-  const docFile = document.getElementById("dishDocFile").files[0];
-  window._lastDoc = "";
-  if(docFile){
-    const reader = new FileReader();
-    await new Promise(res=>{
-      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
-      reader.readAsDataURL(docFile);
-    });
-  }
-
   state.shopping.push({ id: Date.now().toString(), name, amount, unit, area, fresh });
   document.getElementById("shopName").value = "";
   document.getElementById("shopAmount").value = "";
@@ -813,22 +868,18 @@ window.saveInlineManualShop = async function(id, text){
   const item = state.shopping.find(x => x.id === id);
   if(!item) return;
   const parsed = parseQuickShop(text);
-  item.name = parsed.name;
-  item.amount = parsed.amount;
-  item.unit = parsed.unit;
-  await save();
-  renderShop();
+  item.name = parsed.name; item.amount = parsed.amount; item.unit = parsed.unit;
+  await save(); renderShop();
 };
 
 window.saveInlineAutoShop = async function(key, text, area, fresh){
   const parsed = parseQuickShop(text);
-  state.shoppingEdits[key] = {
-    name: parsed.name,
-    amount: parsed.amount,
-    unit: parsed.unit,
-    area: area || "Sonstiges",
-    fresh: !!fresh
-  };
+  state.shoppingEdits[key] = { name: parsed.name, amount: parsed.amount, unit: parsed.unit, area: area || "Sonstiges", fresh: !!fresh };
+  await save(); renderShop();
+};
+
+window.toggleShopChecked = async function(key){
+  state.shoppingChecked[key] = !state.shoppingChecked[key];
   await save();
   renderShop();
 };
@@ -844,51 +895,25 @@ window.addStock = async function(){
   const amount = normalize(document.getElementById("stockAmount").value);
   const unit = normalize(document.getElementById("stockUnit").value);
   if(!name) return;
-
-  const docFile = document.getElementById("dishDocFile").files[0];
-  window._lastDoc = "";
-  if(docFile){
-    const reader = new FileReader();
-    await new Promise(res=>{
-      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
-      reader.readAsDataURL(docFile);
-    });
-  }
-
   state.stock.push({ id: Date.now().toString(), name, amount, unit });
   document.getElementById("stockName").value = "";
   document.getElementById("stockAmount").value = "";
   document.getElementById("stockUnit").value = "";
-  await save();
-  renderStock();
-  renderShop();
-  renderLeftoverIdeas();
+  await save(); render();
 };
 
 window.editStock = async function(id){
-  const item = state.stock.find(x => x.id === id);
-  if(!item) return;
-  const name = prompt("Artikel", item.name);
-  if(name === null) return;
-  const amount = prompt("Menge", item.amount || "");
-  if(amount === null) return;
-  const unit = prompt("Einheit / Stück", item.unit || "");
-  if(unit === null) return;
-  item.name = normalize(name);
-  item.amount = normalize(amount);
-  item.unit = normalize(unit);
-  await save();
-  renderStock();
-  renderShop();
-  renderLeftoverIdeas();
+  const item = state.stock.find(x => x.id === id); if(!item) return;
+  const name = prompt("Artikel", item.name); if(name === null) return;
+  const amount = prompt("Menge", item.amount || ""); if(amount === null) return;
+  const unit = prompt("Einheit / Stück", item.unit || ""); if(unit === null) return;
+  item.name = normalize(name); item.amount = normalize(amount); item.unit = normalize(unit);
+  await save(); render();
 };
 
 window.deleteStock = async function(id){
   state.stock = state.stock.filter(x => x.id !== id);
-  await save();
-  renderStock();
-  renderShop();
-  renderLeftoverIdeas();
+  await save(); render();
 };
 
 window.addFreeze = async function(){
@@ -896,59 +921,32 @@ window.addFreeze = async function(){
   const amount = normalize(document.getElementById("freezeAmount").value);
   const unit = normalize(document.getElementById("freezeUnit").value);
   if(!name) return;
-
-  const docFile = document.getElementById("dishDocFile").files[0];
-  window._lastDoc = "";
-  if(docFile){
-    const reader = new FileReader();
-    await new Promise(res=>{
-      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
-      reader.readAsDataURL(docFile);
-    });
-  }
-
   state.freezer.push({ id: Date.now().toString(), name, amount, unit });
   document.getElementById("freezeName").value = "";
   document.getElementById("freezeAmount").value = "";
   document.getElementById("freezeUnit").value = "";
-  await save();
-  renderFreezer();
-  renderLeftoverIdeas();
+  await save(); render();
 };
 
 window.editFreeze = async function(id){
-  const item = state.freezer.find(x => x.id === id);
-  if(!item) return;
-  const name = prompt("Artikel", item.name);
-  if(name === null) return;
-  const amount = prompt("Menge", item.amount || "");
-  if(amount === null) return;
-  const unit = prompt("Einheit / Stück", item.unit || "");
-  if(unit === null) return;
-  item.name = normalize(name);
-  item.amount = normalize(amount);
-  item.unit = normalize(unit);
-  await save();
-  renderFreezer();
-  renderLeftoverIdeas();
+  const item = state.freezer.find(x => x.id === id); if(!item) return;
+  const name = prompt("Artikel", item.name); if(name === null) return;
+  const amount = prompt("Menge", item.amount || ""); if(amount === null) return;
+  const unit = prompt("Einheit / Stück", item.unit || ""); if(unit === null) return;
+  item.name = normalize(name); item.amount = normalize(amount); item.unit = normalize(unit);
+  await save(); render();
 };
 
 window.deleteFreeze = async function(id){
   state.freezer = state.freezer.filter(x => x.id !== id);
-  await save();
-  renderFreezer();
-  renderLeftoverIdeas();
+  await save(); render();
 };
 
 window.findIdeas = function(){
   const input = getAvailableIngredientInput();
   const box = document.getElementById("ideaResults");
   box.innerHTML = "";
-
-  if(!input.length){
-    box.innerHTML = '<div class="empty">Bitte zuerst Zutaten eingeben.</div>';
-    return;
-  }
+  if(!input.length){ box.innerHTML = '<div class="empty">Bitte zuerst Zutaten eingeben.</div>'; return; }
 
   const sourceDiv = document.createElement("div");
   sourceDiv.className = "box";
@@ -967,7 +965,6 @@ window.findIdeas = function(){
     title.className = "box";
     title.innerHTML = `<div class="title">Passende gespeicherte Gerichte</div><div class="meta">Zuerst werden deine eigenen Rezepte vorgeschlagen.</div>`;
     box.appendChild(title);
-
     savedMatches.slice(0,6).forEach(item => {
       const div = document.createElement("div");
       div.className = "recipehint";
@@ -978,13 +975,12 @@ window.findIdeas = function(){
     });
   }
 
-  const aiIdeas = aiRecipeIdeasFromIngredients(input);
   const aiHeader = document.createElement("div");
   aiHeader.className = "box";
   aiHeader.innerHTML = `<div class="title">Bessere KI-Ideen</div><div class="meta">Diese Vorschläge werden direkt aus deinen heutigen Zutaten, deinem Vorrat und dem Gefrierschrank abgeleitet.</div>`;
   box.appendChild(aiHeader);
 
-  aiIdeas.forEach(idea => {
+  aiRecipeIdeasFromIngredients(input).forEach(idea => {
     const div = document.createElement("div");
     div.className = "recipehint";
     div.innerHTML = `<div class="title">${escapeHtml(idea.name)}</div><div class="meta">${escapeHtml(idea.why)}</div>`;
@@ -1001,12 +997,10 @@ window.searchGoogle = function(){
   const q = normalize(document.getElementById("searchName").value);
   if(q) window.open("https://www.google.com/search?q=" + encodeURIComponent(q + " rezept"), "_blank");
 };
-
 window.searchChef = function(){
   const q = normalize(document.getElementById("searchName").value);
   if(q) window.open("https://www.chefkoch.de/rs/s0/" + encodeURIComponent(q) + "/Rezepte.html", "_blank");
 };
-
 window.searchThermo = function(){
   const q = normalize(document.getElementById("searchName").value);
   if(q) window.open("https://www.rezeptwelt.de/suche?q=" + encodeURIComponent(q), "_blank");
@@ -1015,12 +1009,11 @@ window.searchThermo = function(){
 window.loadExamples = async function(){
   if(state.dishes.length) return;
   state.dishes = [
-    {name:"Spaghetti Bolognese", hint:"Hackfleisch auftauen", image:"", favorite:true, ingredients:parseIngredients("Spaghetti|500|g|Trockenwaren|\nHackfleisch|500|g|Fleisch & Fisch|frisch\nTomatensoße|2|Gläser|Trockenwaren|\nZwiebeln|2|Stück|Obst & Gemüse|frisch")},
-    {name:"Wraps", hint:"Salat frisch kaufen", image:"", favorite:false, ingredients:parseIngredients("Wraps|1|Packung|Trockenwaren|\nHähnchen|400|g|Fleisch & Fisch|frisch\nSalat|1|Kopf|Obst & Gemüse|frisch\nSoße|1|Flasche|Trockenwaren|")},
-    {name:"Salat mit Feta", hint:"Am selben Tag machen", image:"", favorite:false, ingredients:parseIngredients("Salat|1|Kopf|Obst & Gemüse|frisch\nFeta|1|Packung|Kühlregal|frisch\nTomaten|4|Stück|Obst & Gemüse|frisch")}
+    {name:"Spaghetti Bolognese", hint:"Hackfleisch auftauen", category:"Pasta", image:"", doc:"", favorite:true, ingredients:parseIngredients("Spaghetti|500|g|Trockenwaren|\nHackfleisch|500|g|Fleisch & Fisch|frisch\nTomatensoße|2|Gläser|Trockenwaren|\nZwiebeln|2|Stück|Obst & Gemüse|frisch")},
+    {name:"Wraps", hint:"Salat frisch kaufen", category:"Wraps", image:"", doc:"", favorite:false, ingredients:parseIngredients("Wraps|1|Packung|Trockenwaren|\nHähnchen|400|g|Fleisch & Fisch|frisch\nSalat|1|Kopf|Obst & Gemüse|frisch\nSoße|1|Flasche|Trockenwaren|")},
+    {name:"Salat mit Feta", hint:"Am selben Tag machen", category:"Salat", image:"", doc:"", favorite:false, ingredients:parseIngredients("Salat|1|Kopf|Obst & Gemüse|frisch\nFeta|1|Packung|Kühlregal|frisch\nTomaten|4|Stück|Obst & Gemüse|frisch")}
   ];
-  await save();
-  render();
+  await save(); render();
 };
 
 function renderDishes(){
@@ -1028,11 +1021,8 @@ function renderDishes(){
   const box = document.getElementById("dishList");
   box.innerHTML = "";
   let dishes = state.dishes.slice();
-  if(q) dishes = dishes.filter(d => d.name.toLowerCase().includes(q));
-  if(!dishes.length){
-    box.innerHTML = '<div class="empty">Noch keine Gerichte gespeichert.</div>';
-    return;
-  }
+  if(q) dishes = dishes.filter(d => d.name.toLowerCase().includes(q) || (d.category || "").toLowerCase().includes(q));
+  if(!dishes.length){ box.innerHTML = '<div class="empty">Noch keine Gerichte gespeichert.</div>'; return; }
 
   dishes.forEach(d => {
     const i = state.dishes.indexOf(d);
@@ -1048,8 +1038,8 @@ function renderDishes(){
       <div class="actions">
         <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
         <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
-        <button class="soft small" onclick="showMissingForDish(${i})">Was fehlt?</button>
         <button class="soft small" onclick="duplicateDish(${i})">Duplizieren</button>
+        <button class="soft small" onclick="showMissingForDish(${i})">Was fehlt?</button>
         <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
       </div>`;
     box.appendChild(div);
@@ -1104,10 +1094,7 @@ function renderShop(){
 
   const merged = uniqueByNameUnit([...reduced, ...state.shopping.map(x => ({...x, key:x.id, auto:false}))]);
 
-  if(!merged.length){
-    box.innerHTML = '<div class="empty">Noch keine Einkaufsartikel.</div>';
-    return;
-  }
+  if(!merged.length){ box.innerHTML = '<div class="empty">Noch keine Einkaufsartikel.</div>'; return; }
 
   const groups = {};
   merged.forEach(item => {
@@ -1116,7 +1103,7 @@ function renderShop(){
     groups[area].push(item);
   });
 
-  Object.keys(groups).forEach(area => {
+  SUPERMARKET_ORDER.filter(a => groups[a]).forEach(area => {
     const areaDiv = document.createElement("div");
     areaDiv.className = "box";
     areaDiv.innerHTML = `<div class="title">${escapeHtml(area)}</div>`;
@@ -1125,26 +1112,33 @@ function renderShop(){
       const override = item.auto ? (state.shoppingEdits[item.key] || null) : null;
       const finalItem = override ? { ...item, ...override } : item;
       const line = [finalItem.name, finalItem.amount, finalItem.unit].filter(Boolean).join(" ");
+      const checkKey = item.auto ? "auto|" + item.key : "manual|" + item.id;
+      const checked = !!state.shoppingChecked[checkKey];
 
       const row = document.createElement("div");
-      row.className = "shopbox";
+      row.className = "shopbox" + (checked ? " done" : "");
       row.style.marginTop = "8px";
       row.innerHTML = `
-        <div class="shop-head">
-          <div>
-            <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
-            <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
-          </div>
-          <div class="actions">
-            ${item.auto ? '' : `<button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}
+        <div class="checkline">
+          <input type="checkbox" ${checked ? "checked" : ""} onchange="toggleShopChecked('${checkKey}')">
+          <div style="flex:1">
+            <div class="shop-head">
+              <div>
+                <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
+                <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
+              </div>
+              <div class="actions">
+                ${item.auto ? '' : `<button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}
+              </div>
+            </div>
+            <div
+              class="shop-edit"
+              contenteditable="true"
+              onkeydown="${item.auto ? `if(event.key==='Enter'){event.preventDefault();saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})}` : `if(event.key==='Enter'){event.preventDefault();saveInlineManualShop('${item.id}', this.innerText)}`}"
+              onblur="${item.auto ? `saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})` : `saveInlineManualShop('${item.id}', this.innerText)`}"
+            >${escapeHtml(line)}</div>
           </div>
         </div>
-        <div
-          class="shop-edit"
-          contenteditable="true"
-          onkeydown="${item.auto ? `if(event.key==='Enter'){event.preventDefault();saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})}` : `if(event.key==='Enter'){event.preventDefault();saveInlineManualShop('${item.id}', this.innerText)}`}"
-          onblur="${item.auto ? `saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})` : `saveInlineManualShop('${item.id}', this.innerText)`}"
-        >${escapeHtml(line)}</div>
       `;
       areaDiv.appendChild(row);
     });
@@ -1156,10 +1150,7 @@ function renderShop(){
 function renderStock(){
   const box = document.getElementById("stockList");
   box.innerHTML = "";
-  if(!state.stock.length){
-    box.innerHTML = '<div class="empty">Noch kein Vorrat.</div>';
-    return;
-  }
+  if(!state.stock.length){ box.innerHTML = '<div class="empty">Noch kein Vorrat.</div>'; return; }
   state.stock.forEach(item => {
     const div = document.createElement("div");
     div.className = "simpleitem";
@@ -1173,10 +1164,7 @@ function renderStock(){
 function renderFreezer(){
   const box = document.getElementById("freezeList");
   box.innerHTML = "";
-  if(!state.freezer.length){
-    box.innerHTML = '<div class="empty">Noch nichts im Gefrierschrank eingetragen.</div>';
-    return;
-  }
+  if(!state.freezer.length){ box.innerHTML = '<div class="empty">Noch nichts im Gefrierschrank eingetragen.</div>'; return; }
   state.freezer.forEach(item => {
     const div = document.createElement("div");
     div.className = "simpleitem";
@@ -1213,120 +1201,12 @@ onSnapshot(ref, snap => {
     stock: Array.isArray(data.stock) ? data.stock : [],
     freezer: Array.isArray(data.freezer) ? data.freezer : [],
     shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
+    shoppingChecked: data.shoppingChecked && typeof data.shoppingChecked === "object" ? data.shoppingChecked : {},
     editIndex: null
   };
   updateStatus("Synchronisiert ✅");
   render();
 });
-
-
-async function scanRecipeImage(){
-  const file = document.getElementById("dishImageFile").files[0];
-  if(!file){
-    alert("Bitte zuerst ein Foto auswählen.");
-    return;
-  }
-  const status = document.getElementById("status");
-  status.textContent = "Lese Text aus Bild…";
-
-  const script = document.createElement("script");
-  script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-  script.onload = async () => {
-    const { createWorker } = Tesseract;
-    const worker = await createWorker("deu");
-    const { data } = await worker.recognize(file);
-    await worker.terminate();
-
-    const lines = data.text.split("\n").map(x=>x.trim()).filter(x=>x.length>2);
-    const textarea = document.getElementById("dishIngredients");
-    textarea.value = lines.join("\n");
-
-    status.textContent = "Text erkannt – bitte Zutaten kurz prüfen.";
-  };
-  document.body.appendChild(script);
-}
-
-window.duplicateDish = async function(i){
-  const dish = state.dishes[i];
-  if(!dish) return;
-  const copy = JSON.parse(JSON.stringify(dish));
-  copy.name = dish.name + " Kopie";
-  state.dishes.push(copy);
-  await save();
-  render();
-};
-
-
-window.importRecipe = async function(){
-  const url = document.getElementById("importUrl").value.trim();
-  if(!url){ alert("Bitte eine Rezept URL einfügen."); return; }
-  const status = document.getElementById("status");
-  status.textContent = "Lade Rezept…";
-  try{
-    const proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
-    const res = await fetch(proxy);
-    const html = await res.text();
-
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi,"")
-      .replace(/<style[\s\S]*?<\/style>/gi,"")
-      .replace(/<[^>]+>/g,"\n")
-      .split("\n")
-      .map(x=>x.trim())
-      .filter(x=>x.length>2);
-
-    const ingredients = text.filter(x =>
-      /(g|kg|ml|l|stück|tl|el)/i.test(x)
-    ).slice(0,25);
-
-    if(ingredients.length){
-      document.getElementById("dishIngredients").value = ingredients.join("\n");
-      status.textContent = "Zutaten importiert – bitte kurz prüfen.";
-    }else{
-      status.textContent = "Keine Zutaten automatisch erkannt.";
-    }
-  }catch(e){
-    status.textContent = "Import fehlgeschlagen.";
-  }
-};
-
-
-window.mealPrepPlan = async function(){
-  if(!state.dishes.length) return;
-  const favs = state.dishes.filter(d => d.favorite);
-  const pool = favs.length ? favs : state.dishes;
-  const first = pool[Math.floor(Math.random()*pool.length)];
-  const second = pool[Math.floor(Math.random()*pool.length)];
-  state.week = [first.name, first.name, second.name, second.name, "", "", ""];
-  await save();
-  render();
-};
-
-function getOwnedIngredientNames(){
-  return [
-    ...(state.stock || []).map(x => ingredientToken(x.name)),
-    ...(state.freezer || []).map(x => ingredientToken(x.name))
-  ];
-}
-
-window.showMissingForDish = function(i){
-  const card = document.getElementById("missingCard");
-  const dish = state.dishes[i];
-  if(!dish){ card.style.display = "none"; return; }
-  const owned = getOwnedIngredientNames();
-  const missing = (dish.ingredients || []).filter(x => !owned.includes(ingredientToken(x.name)));
-  card.style.display = "block";
-  card.innerHTML = `
-    <h2 class="section-title">🛒 Was fehlt für ${escapeHtml(dish.name)}?</h2>
-    ${missing.length
-      ? `<div class="list">${missing.map(x => `<div class="box"><div class="title">${escapeHtml(x.name)}</div><div class="meta">${escapeHtml([scaleAmount(x.amount), x.unit].filter(Boolean).join(" "))}</div></div>`).join("")}</div>`
-      : `<div class="hint">Alles da oder im Vorrat/Gefrierschrank vorhanden ✅</div>`
-    }
-  `;
-  card.scrollIntoView({behavior:"smooth", block:"start"});
-};
-
-render();
 </script>
 </body>
 </html>
