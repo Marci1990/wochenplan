@@ -11,162 +11,56 @@
 
 <script>
 
-const supabaseUrl = "https://rtcutlvjjxzmgzyavjjm.supabase.co"
-const supabaseKey = "sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o"
+const supabaseUrl="https://rtcutlvjjxzmgzyavjjm.supabase.co"
+const supabaseKey="sb_publishable_wikNob0vjfIaYgGXODZ_-Q_A4kS9A2o"
 
-const supabase = window.supabase.createClient(supabaseUrl,supabaseKey)
+const supabase=window.supabase.createClient(supabaseUrl,supabaseKey)
 
-const APP_ID = "familie-hanst-main"
+const APP_ID="familie-hanst"
 
-let dishes = []
-let week = Array(7).fill("")
-
-const DAYS = [
-"Montag",
-"Dienstag",
-"Mittwoch",
-"Donnerstag",
-"Freitag",
-"Samstag",
-"Sonntag"
-]
-
-function buildState(){
-return {
-dishes,
-week
-}
-}
-
-function applyState(data){
-
-dishes = data.dishes || []
-week = data.week || Array(7).fill("")
-
-}
+let dishes=[]
+let week=Array(7).fill("")
+let stock=[]
+let manual=[]
+let checked={}
 
 async function saveData(){
 
-const payload = buildState()
-
 await supabase
 .from("app_state")
-.upsert(
-{
+.upsert({
 id:APP_ID,
-data:payload,
-updated_at:new Date().toISOString()
+data:{
+dishes,
+week,
+stock,
+manual,
+checked
 },
-{
-onConflict:"id"
-}
-)
+updated_at:new Date().toISOString()
+},{onConflict:"id"})
 
 }
 
 async function loadData(){
 
-const {data} = await supabase
+const {data}=await supabase
 .from("app_state")
 .select("data")
 .eq("id",APP_ID)
 .maybeSingle()
 
-if(data && data.data){
+if(data&&data.data){
 
-applyState(data.data)
-
-}else{
-
-await saveData()
-
-}
+dishes=data.data.dishes||[]
+week=data.data.week||Array(7).fill("")
+stock=data.data.stock||[]
+manual=data.data.manual||[]
+checked=data.data.checked||{}
 
 }
 
-function addDish(){
-
-const name = document.getElementById("dishName").value.trim()
-
-if(!name) return
-
-dishes.push({
-name:name
-})
-
-document.getElementById("dishName").value=""
-
-saveData()
-
-render()
-
 }
-
-function updateDay(i,val){
-
-week[i] = val
-
-saveData()
-
-}
-
-function renderDishes(){
-
-const box = document.getElementById("dishList")
-
-box.innerHTML=""
-
-dishes.forEach(d => {
-
-const div = document.createElement("div")
-
-div.className="box"
-
-div.textContent = d.name
-
-box.appendChild(div)
-
-})
-
-}
-
-function renderWeek(){
-
-const box = document.getElementById("week")
-
-box.innerHTML=""
-
-DAYS.forEach((day,i)=>{
-
-const div = document.createElement("div")
-
-div.className="box"
-
-div.innerHTML=`
-<strong>${day}</strong>
-<input value="${week[i] || ""}" oninput="updateDay(${i},this.value)">
-`
-
-box.appendChild(div)
-
-})
-
-}
-
-function render(){
-
-renderDishes()
-renderWeek()
-
-}
-
-document.addEventListener("DOMContentLoaded",async()=>{
-
-await loadData()
-
-render()
-
-})
 
 </script>
 
@@ -178,39 +72,25 @@ background:#f7f7ff;
 padding:20px;
 }
 
-h1{
-margin-bottom:20px;
-}
-
 .card{
 background:white;
 padding:20px;
+border-radius:10px;
 margin-bottom:20px;
-border-radius:12px;
-box-shadow:0 4px 10px rgba(0,0,0,0.05);
-}
-
-.box{
-padding:10px;
-border-bottom:1px solid #eee;
 }
 
 button{
-padding:10px 14px;
+padding:10px;
 border:none;
 background:#ef5f95;
 color:white;
-border-radius:8px;
+border-radius:6px;
 cursor:pointer;
 }
 
 input{
 padding:10px;
-margin-top:6px;
-margin-bottom:6px;
-width:100%;
-border-radius:8px;
-border:1px solid #ddd;
+margin:5px;
 }
 
 </style>
@@ -233,7 +113,7 @@ border:1px solid #ddd;
 
 <div class="card">
 
-<h3>Gespeicherte Gerichte</h3>
+<h3>Gerichte</h3>
 
 <div id="dishList"></div>
 
@@ -245,7 +125,112 @@ border:1px solid #ddd;
 
 <div id="week"></div>
 
+<button onclick="randomWeek()">🎲 Zufallsplan</button>
+
 </div>
+
+<script>
+
+const DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"]
+
+function addDish(){
+
+const name=document.getElementById("dishName").value.trim()
+
+if(!name)return
+
+dishes.push({name})
+
+document.getElementById("dishName").value=""
+
+saveData()
+
+render()
+
+}
+
+function randomWeek(){
+
+for(let i=0;i<7;i++){
+
+if(dishes.length==0)return
+
+const r=Math.floor(Math.random()*dishes.length)
+
+week[i]=dishes[r].name
+
+}
+
+saveData()
+
+render()
+
+}
+
+function renderDishes(){
+
+const box=document.getElementById("dishList")
+
+box.innerHTML=""
+
+dishes.forEach(d=>{
+
+const div=document.createElement("div")
+
+div.innerHTML=d.name
+
+box.appendChild(div)
+
+})
+
+}
+
+function renderWeek(){
+
+const box=document.getElementById("week")
+
+box.innerHTML=""
+
+DAYS.forEach((day,i)=>{
+
+const div=document.createElement("div")
+
+div.innerHTML=`
+<strong>${day}</strong>
+<input value="${week[i]||""}" oninput="updateDay(${i},this.value)">
+`
+
+box.appendChild(div)
+
+})
+
+}
+
+function updateDay(i,val){
+
+week[i]=val
+
+saveData()
+
+}
+
+function render(){
+
+renderDishes()
+
+renderWeek()
+
+}
+
+document.addEventListener("DOMContentLoaded",async()=>{
+
+await loadData()
+
+render()
+
+})
+
+</script>
 
 </body>
 </html>
