@@ -63,6 +63,18 @@
   .shop-edit{font-size:16px}
 }
 
+
+    details.recipe-collapse, details.week-collapse{border:1px solid var(--border);border-radius:14px;background:#fff}
+    details.recipe-collapse summary, details.week-collapse summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    details.recipe-collapse summary::-webkit-details-marker, details.week-collapse summary::-webkit-details-marker{display:none}
+    .collapse-body{padding:0 12px 12px}
+    .summary-sub{font-size:13px;color:var(--muted);font-weight:400}
+    .print-sheet{font-family:Arial,sans-serif;padding:24px;color:#222}
+    .print-sheet h1{margin:0 0 14px;font-size:24px}
+    .print-row{border-bottom:1px solid #ddd;padding:10px 0}
+    .print-day{font-weight:700;margin-bottom:4px}
+    .week-inline-actions{display:flex;gap:8px;flex-wrap:wrap}
+
 </style>
 </head>
 <body>
@@ -764,7 +776,37 @@ window.rollDay = async function(i){
 };
 
 window.printWeek = function(){
-  window.print();
+  const rows = DAYS.map((day, i) => {
+    const name = state.week[i] || "—";
+    const note = (state.notes && state.notes[i]) ? `<div style="margin-top:4px;color:#555;">Notiz: ${escapeHtml(state.notes[i])}</div>` : "";
+    return `<div class="print-row"><div class="print-day">${escapeHtml(day)}</div><div>${escapeHtml(name)}</div>${note}</div>`;
+  }).join("");
+
+  const printWindow = window.open("", "_blank", "width=900,height=700");
+  if(!printWindow) return alert("Bitte Popups erlauben, damit der Wochenplan gedruckt werden kann.");
+  printWindow.document.write(`<!DOCTYPE html>
+  <html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <title>Wochenplan drucken</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:24px;color:#222}
+      h1{margin:0 0 14px;font-size:24px}
+      .print-row{border-bottom:1px solid #ddd;padding:10px 0;break-inside:avoid}
+      .print-day{font-weight:700;margin-bottom:4px}
+      @media print{
+        body{padding:10mm}
+        button{display:none}
+      }
+    </style>
+  </head>
+  <body>
+    <button onclick="window.print()" style="margin-bottom:14px;padding:10px 14px;">🖨️ Jetzt drucken</button>
+    <h1>💛 Familie Hanst Wochenplan</h1>
+    ${rows}
+  </body>
+  </html>`);
+  printWindow.document.close();
 };
 
 window.clearWeek = async function(){
@@ -1047,7 +1089,12 @@ function renderDishes(){
   const box = document.getElementById("dishList");
   box.innerHTML = "";
   let dishes = state.dishes.slice();
-  if(q) dishes = dishes.filter(d => d.name.toLowerCase().includes(q));
+  if(q) dishes = dishes.filter(d =>
+    d.name.toLowerCase().includes(q) ||
+    (d.category || "").toLowerCase().includes(q) ||
+    (d.ingredients || []).some(i => (i.name || "").toLowerCase().includes(q))
+  );
+
   if(!dishes.length){
     box.innerHTML = '<div class="empty">Noch keine Gerichte gespeichert.</div>';
     return;
@@ -1056,22 +1103,29 @@ function renderDishes(){
   dishes.forEach(d => {
     const i = state.dishes.indexOf(d);
     const preview = (d.ingredients || []).map(ingredientLabel).join(", ");
-    const div = document.createElement("div");
-    div.className = "box";
-    div.innerHTML = `<div class="title">${escapeHtml(d.name)} ${d.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
-      ${d.category ? `<div class="meta">Kategorie: ${escapeHtml(d.category)}</div>` : ""}
-      ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
-      <div class="meta">${escapeHtml(preview)}</div>
-      ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
-      ${d.doc ? `<div class="actions"><a href="${d.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
-      <div class="actions">
-        <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
-        <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
-        <button class="soft small" onclick="showMissingForDish(${i})">Was fehlt?</button>
-        <button class="soft small" onclick="duplicateDish(${i})">Duplizieren</button>
-        <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
+    const detail = document.createElement("details");
+    detail.className = "recipe-collapse";
+    if(q) detail.open = true;
+
+    detail.innerHTML = `<summary>
+        <span>${escapeHtml(d.name)} ${d.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</span>
+        <span class="summary-sub">${escapeHtml(d.category || preview || 'Antippen zum Öffnen')}</span>
+      </summary>
+      <div class="collapse-body">
+        ${d.category ? `<div class="meta">Kategorie: ${escapeHtml(d.category)}</div>` : ""}
+        ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
+        <div class="meta">${escapeHtml(preview)}</div>
+        ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
+        ${d.doc ? `<div class="actions"><a href="${d.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
+        <div class="actions">
+          <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
+          <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
+          <button class="soft small" onclick="showMissingForDish(${i})">Was fehlt?</button>
+          <button class="soft small" onclick="duplicateDish(${i})">Duplizieren</button>
+          <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
+        </div>
       </div>`;
-    box.appendChild(div);
+    box.appendChild(detail);
   });
 }
 
@@ -1081,11 +1135,15 @@ function renderWeek(){
   const optionsAll = state.dishes.map(d => d.name);
 
   DAYS.forEach((day, i) => {
+    const dish = state.dishes.find(d => d.name === state.week[i]);
     const options = optionsAll
       .map(name => `<option value="${escapeHtml(name)}" ${state.week[i] === name ? "selected" : ""}>${escapeHtml(name)}</option>`)
       .join("");
 
     const noteClass = (state.notes && state.notes[i]) ? "week-note has-note" : "week-note";
+    const ingredientPreview = dish && (dish.ingredients || []).length
+      ? (dish.ingredients || []).map(ingredientLabel).join(", ")
+      : "";
 
     const row = document.createElement("div");
     row.className = "weekrow";
@@ -1097,8 +1155,23 @@ function renderWeek(){
           ${options}
         </select>
         <textarea class="${noteClass}" placeholder="📝 Notiz, z.B. Salat dazu" oninput="updateNote(${i}, this.value)">${escapeHtml((state.notes && state.notes[i]) || "")}</textarea>
+        ${dish ? `
+          <details class="week-collapse">
+            <summary>
+              <span>👀 Rezept & Bild anzeigen</span>
+              <span class="summary-sub">${escapeHtml(dish.name)}</span>
+            </summary>
+            <div class="collapse-body">
+              ${dish.hint ? `<div class="hint">${escapeHtml(dish.hint)}</div>` : ""}
+              ${ingredientPreview ? `<div class="meta">${escapeHtml(ingredientPreview)}</div>` : `<div class="meta">Keine Zutaten hinterlegt.</div>`}
+              ${dish.image ? `<img class="recipe-image" src="${dish.image}" alt="Rezeptbild">` : `<div class="small-note">Kein Bild gespeichert.</div>`}
+              ${dish.doc ? `<div class="actions"><a href="${dish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
+            </div>
+          </details>` : ""}
       </div>
-      <button class="small" onclick="rollDay(${i})">🎲</button>`;
+      <div class="week-inline-actions">
+        <button class="small" onclick="rollDay(${i})">🎲</button>
+      </div>`;
     box.appendChild(row);
   });
 }
