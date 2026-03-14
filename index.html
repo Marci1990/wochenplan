@@ -98,8 +98,8 @@
 
   <div class="grid2">
     <section class="card">
-      <h2 class="section-title">Resteverwertung / Vorschläge</h2>
-      <div class="small-note">Nutzt Vorrat, Gefrierschrank und deine gespeicherten Rezepte.</div>
+      <h2 class="section-title">🧊 Gefrierschrank Erinnerung</h2>
+      <div class="small-note">Zeigt dir, was schon lange eingefroren ist und bald verbraucht werden sollte.</div>
       <div id="leftoverIdeas" class="list"></div>
     </section>
 
@@ -121,8 +121,8 @@ Hackfleisch"></textarea>
 
   <div class="grid">
     <section class="card">
-      <h2 class="section-title">Gericht hinzufügen / bearbeiten</h2>
-      <input id="dishName" placeholder="Gericht">
+      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Gericht hinzufügen / bearbeiten</h2><button type="button" class="soft small" data-label="Gericht hinzufügen / bearbeiten" onclick="toggleSection('dishEditor', this)">▼ Gericht hinzufügen / bearbeiten</button></div>
+      <div id="dishEditor"><input id="dishName" placeholder="Gericht">
             <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile:
 Name|Menge|Einheit|Bereich|frisch
 
@@ -142,11 +142,11 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
         <button id="saveDishBtn" onclick="addDish()">Speichern</button>
         <button id="cancelEditBtn" class="soft" onclick="cancelEdit()" style="display:none;">Bearbeiten abbrechen</button>
       </div>
-      <div class="small-note">Externe KI wie ChatGPT in der App braucht einen eigenen API-Schlüssel. Diese Version funktioniert direkt ohne Schlüssel und macht gute lokale Vorschläge.</div>
+      <div class="small-note">Externe KI wie ChatGPT in der App braucht einen eigenen API-Schlüssel. Diese Version funktioniert direkt ohne Schlüssel und macht gute lokale Vorschläge.</div></div>
     </section>
 
     <section class="card">
-      <h2 class="section-title">Wochenplan</h2>
+      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Wochenplan</h2><button type="button" class="soft small" data-label="Wochenplan" onclick="toggleSection('week', this)">▼ Wochenplan</button></div>
             <div id="week" class="list"></div>
     </section>
   </div>
@@ -604,39 +604,55 @@ function renderLeftoverIdeas(){
   const box = document.getElementById("leftoverIdeas");
   box.innerHTML = "";
 
-  const available = [
-    ...(state.stock || []),
-    ...(state.freezer || [])
-  ];
+  const freezerItems = (state.freezer || []).map(item => {
+    const savedAt = typeof item.date === "number" ? item.date : null;
+    const days = savedAt ? Math.floor((Date.now() - savedAt) / (1000 * 60 * 60 * 24)) : null;
+    return { ...item, days };
+  });
 
-  if(!available.length){
-    box.innerHTML = '<div class="empty">Trage zuerst etwas in Vorrat oder Gefrierschrank ein.</div>';
+  if(!freezerItems.length){
+    box.innerHTML = '<div class="empty">Noch nichts im Gefrierschrank eingetragen.</div>';
     return;
   }
 
-  const matches = state.dishes.map(d => {
-    const score = (d.ingredients || []).filter(i => findMatchingItemInList(i, available)).length;
-    const total = (d.ingredients || []).length || 1;
-    return {dish:d, score, total};
-  }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
+  const critical = freezerItems
+    .filter(x => x.days !== null && x.days >= 60)
+    .sort((a,b) => b.days - a.days);
 
-  if(matches.length){
-    matches.slice(0,5).forEach(item => {
-      const div = document.createElement("div");
-      div.className = "recipehint";
-      div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)}</div><div class="meta">${item.score} von ${item.total} Zutaten passen aus Vorrat / Gefrierschrank.</div>`;
-      box.appendChild(div);
-    });
-  } else {
-    const ideas = aiRecipeIdeasFromIngredients(available);
-    ideas.forEach(idea => {
-      const div = document.createElement("div");
-      div.className = "recipehint";
-      div.innerHTML = `<div class="title">${escapeHtml(idea.name)}</div><div class="meta">${escapeHtml(idea.why)}</div>`;
-      box.appendChild(div);
-    });
+  const fallback = freezerItems
+    .filter(x => x.days === null)
+    .slice(0, 5);
+
+  const list = critical.length ? critical.slice(0, 8) : fallback;
+
+  if(!list.length){
+    box.innerHTML = '<div class="empty">Im Moment gibt es nichts, das bald verbraucht werden sollte.</div>';
+    return;
   }
+
+  list.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "recipehint";
+
+    let status = "Einfrierdatum fehlt";
+    if(item.days !== null){
+      if(item.days >= 120) status = `⚠️ seit ${item.days} Tagen eingefroren – möglichst bald verbrauchen`;
+      else if(item.days >= 90) status = `⚠️ seit ${item.days} Tagen eingefroren – bald verbrauchen`;
+      else if(item.days >= 60) status = `🧊 seit ${item.days} Tagen eingefroren`;
+      else status = `seit ${item.days} Tagen eingefroren`;
+    }
+
+    const amount = [item.amount, item.unit].filter(Boolean).join(" ");
+
+    div.innerHTML = `
+      <div class="title">${escapeHtml(item.name)}</div>
+      <div class="meta">${escapeHtml(amount || "Menge nicht angegeben")}</div>
+      <div class="meta">${escapeHtml(status)}</div>
+    `;
+    box.appendChild(div);
+  });
 }
+
 
 window.downloadBackup = function(){
   const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
@@ -1047,7 +1063,7 @@ window.addFreeze = async function(){
     });
   }
 
-  state.freezer.push({ id: Date.now().toString(), name, amount, unit });
+  state.freezer.push({ id: Date.now().toString(), name, amount, unit, date: Date.now() });
   document.getElementById("freezeName").value = "";
   document.getElementById("freezeAmount").value = "";
   document.getElementById("freezeUnit").value = "";
