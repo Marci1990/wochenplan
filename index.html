@@ -49,11 +49,6 @@
     .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
-    .week-details{margin-top:6px;border:1px solid var(--border);border-radius:12px;background:#faf7fb;overflow:hidden}
-    .week-details summary{cursor:pointer;list-style:none;padding:10px 12px;font-weight:700;color:#6b4b5d}
-    .week-details summary::-webkit-details-marker{display:none}
-    .week-details-body{padding:0 12px 12px 12px}
-    .week-ingredients{margin:0;color:var(--muted);font-size:14px;white-space:pre-wrap}
   
 /* MOBILE OPTIMIERUNG */
 @media (max-width:700px){
@@ -106,6 +101,8 @@
       <h2 class="section-title">Resteverwertung / Vorschläge</h2>
       <div class="small-note">Nutzt Vorrat, Gefrierschrank und deine gespeicherten Rezepte.</div>
       <div id="leftoverIdeas" class="list"></div>
+      <h3 style="margin-top:10px">🍽 Lange nicht gekocht</h3>
+      <div id="longCooked" class="list"></div>
     </section>
 
     <section class="card">
@@ -140,7 +137,6 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
-      <label style="display:flex;align-items:center;gap:8px;margin:6px 0 2px 0;"><input id="dishRemoveImage" type="checkbox" style="width:auto"> Bild beim Speichern entfernen</label>
       <input id="dishDocFile" type="file" accept=".pdf,.doc,.docx,.txt">
       <div class="small-note">Optional kannst du auch eine Rezept‑Datei (PDF, DOC, TXT) anhängen.</div>
       <div class="small-note">Bei Foto-Dateien wird das Bild automatisch verkleinert und komprimiert, damit Firebase es speichern kann.</div>
@@ -284,7 +280,8 @@ let state = {
   stock: [],
   freezer: [],
   shoppingEdits: {},
-  editIndex: null
+  editIndex: null,
+  lastCooked: {}
 };
 
 const normalize = t => String(t || "").trim();
@@ -530,6 +527,7 @@ function renderTodayCard(){
 
 window.showTodayCooking = function(){
   renderTodayCard();
+  renderLongCooked();
   const card = document.getElementById("todayCard");
   if(card.style.display === "none"){
     alert("Für heute ist noch nichts im Wochenplan eingetragen.");
@@ -601,7 +599,8 @@ window.restoreBackup = function(event){
         stock: Array.isArray(data.stock) ? data.stock : [],
         freezer: Array.isArray(data.freezer) ? data.freezer : [],
         shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
-        editIndex: null
+        editIndex: null,
+  lastCooked: {}
       };
       await save();
       render();
@@ -641,16 +640,7 @@ window.addDish = async function(){
   }
 
   const finish = async (img) => {
-    let finalImage = existingDish?.image || "";
-
-    if(imageUrl){
-      finalImage = imageUrl;
-    }
-
-    if(img){
-      finalImage = img;
-    }
-
+    const finalImage = img || imageUrl || existingDish?.image || "";
     const dish = {
       name,
       hint,
@@ -678,7 +668,6 @@ window.addDish = async function(){
     document.getElementById("dishCategory").value = "";
     document.getElementById("dishImageUrl").value = "";
     document.getElementById("dishImageFile").value = "";
-    document.getElementById("dishRemoveImage").checked = false;
     document.getElementById("dishDocFile").value = "";
     document.getElementById("dishFavorite").checked = false;
     await save();
@@ -706,7 +695,6 @@ window.editDish = function(i){
   document.getElementById("dishCategory").value = dish.category || "";
   document.getElementById("dishImageUrl").value = dish.image && !String(dish.image).startsWith("data:") ? dish.image : "";
   document.getElementById("dishImageFile").value = "";
-  document.getElementById("dishRemoveImage").checked = false;
   document.getElementById("dishDocFile").value = "";
   document.getElementById("dishFavorite").checked = !!dish.favorite;
   state.editIndex = i;
@@ -723,7 +711,6 @@ window.cancelEdit = function(){
     document.getElementById("dishCategory").value = "";
   document.getElementById("dishImageUrl").value = "";
   document.getElementById("dishImageFile").value = "";
-  document.getElementById("dishRemoveImage").checked = false;
   document.getElementById("dishDocFile").value = "";
   document.getElementById("dishFavorite").checked = false;
   document.getElementById("saveDishBtn").textContent = "Speichern";
@@ -773,6 +760,7 @@ window.rollDay = async function(i){
   renderWeek();
   renderShop();
   renderTodayCard();
+  renderLongCooked();
 };
 
 window.printWeek = function(){
@@ -787,10 +775,12 @@ window.clearWeek = async function(){
 
 window.updateDay = async function(i, val){
   state.week[i] = val;
+  if(val){ state.lastCooked = state.lastCooked || {}; state.lastCooked[val] = Date.now(); }
   await save();
   renderWeek();
   renderShop();
   renderTodayCard();
+  renderLongCooked();
 };
 
 window.updateNote = async function(i, val){
@@ -1096,10 +1086,6 @@ function renderWeek(){
       .join("");
 
     const noteClass = (state.notes && state.notes[i]) ? "week-note has-note" : "week-note";
-    const selectedDish = state.dishes.find(d => d.name === state.week[i]);
-    const ingredientPreview = selectedDish
-      ? (selectedDish.ingredients || []).map(ingredientLabel).join(", ")
-      : "";
 
     const row = document.createElement("div");
     row.className = "weekrow";
@@ -1110,18 +1096,6 @@ function renderWeek(){
           <option value="">Gericht wählen</option>
           ${options}
         </select>
-        ${selectedDish ? `
-          <details class="week-details">
-            <summary>👀 Zutaten & Bild anzeigen</summary>
-            <div class="week-details-body">
-              ${selectedDish.hint ? `<div class="hint">${escapeHtml(selectedDish.hint)}</div>` : ""}
-              <div class="small-note">${selectedDish.category ? `Kategorie: ${escapeHtml(selectedDish.category)}` : "Gespeichertes Rezept"}</div>
-              <div class="week-ingredients">${escapeHtml(ingredientPreview || "Keine Zutaten hinterlegt.")}</div>
-              ${selectedDish.image ? `<img class="recipe-image" src="${selectedDish.image}" alt="Rezeptbild">` : `<div class="small-note" style="margin-top:8px">Kein Bild gespeichert.</div>`}
-              ${selectedDish.doc ? `<div class="actions"><a href="${selectedDish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
-            </div>
-          </details>
-        ` : ""}
         <textarea class="${noteClass}" placeholder="📝 Notiz, z.B. Salat dazu" oninput="updateNote(${i}, this.value)">${escapeHtml((state.notes && state.notes[i]) || "")}</textarea>
       </div>
       <button class="small" onclick="rollDay(${i})">🎲</button>`;
@@ -1239,6 +1213,32 @@ function renderFreezer(){
   });
 }
 
+
+function renderLongCooked(){
+  const box = document.getElementById("longCooked");
+  if(!box) return;
+  box.innerHTML = "";
+  const entries = Object.entries(state.lastCooked || {});
+  const now = Date.now();
+  const arr = entries.map(([name,date])=>{
+    const days = Math.floor((now - date)/(1000*60*60*24));
+    return {name, days};
+  }).sort((a,b)=>b.days-a.days).slice(0,5);
+
+  if(!arr.length){
+    box.innerHTML = '<div class="empty">Noch keine Daten vorhanden.</div>';
+    return;
+  }
+
+  arr.forEach(x=>{
+    const div = document.createElement("div");
+    div.className="recipehint";
+    div.innerHTML = `<div class="title">${x.name}</div><div class="meta">vor ${x.days} Tagen gekocht</div>`;
+    box.appendChild(div);
+  });
+}
+
+
 function render(){
   document.getElementById("servingsSelect").value = String(state.servings || 2);
   renderDishes();
@@ -1248,6 +1248,7 @@ function render(){
   renderFreezer();
   renderLeftoverIdeas();
   renderTodayCard();
+  renderLongCooked();
 }
 
 onSnapshot(ref, snap => {
@@ -1266,7 +1267,8 @@ onSnapshot(ref, snap => {
     stock: Array.isArray(data.stock) ? data.stock : [],
     freezer: Array.isArray(data.freezer) ? data.freezer : [],
     shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
-    editIndex: null
+    editIndex: null,
+  lastCooked: {}
   };
   updateStatus("Synchronisiert ✅");
   render();
