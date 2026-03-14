@@ -46,7 +46,7 @@
     .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
     .section-title{margin-bottom:8px}
-    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}.shopbox.done{opacity:.72}.shopbox.done .shop-edit{text-decoration:line-through}.week-extra{margin-top:8px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:#fffafc}
+    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}.shopbox.done{opacity:.72}.shopbox.done .shop-edit{text-decoration:line-through}.week-extra{margin-top:8px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:#fffafc}.ingredient-chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.ingredient-chip{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:14px}.recipehint.clickable{cursor:pointer}.recipehint.clickable:hover{background:#fff9fc}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
   
@@ -101,20 +101,7 @@
       
     </section>
 
-    <section class="card">
-      <h2 class="section-title">Was kann ich heute aus folgenden Zutaten kochen?</h2>
-      <div class="small-note">Nutzt eingegebene Zutaten + Vorrat + Gefrierschrank. Zeigt zuerst passende gespeicherte Gerichte und dann bessere KI-Ideen.</div>
-      <textarea id="ideaInput" placeholder="z.B.
-Tomaten
-Nudeln
-Zwiebeln
-Hackfleisch"></textarea>
-      <div class="row" style="margin-top:10px">
-        <button onclick="findIdeas()">Vorschläge anzeigen</button>
-        <button class="soft" onclick="clearIdeas()">Leeren</button>
-      </div>
-      <div id="ideaResults" class="list"></div>
-    </section>
+    
   </div>
 
   <div class="grid">
@@ -647,6 +634,26 @@ function hasIngredientAtHome(item){
     findMatchingItemInList(item, state.shopping)
   );
 }
+
+
+window.openDishFromIdea = function(name){
+  const dish = state.dishes.find(d => d.name === name);
+  const card = document.getElementById("missingCard");
+  if(!card || !dish) return;
+
+  const ingredients = (dish.ingredients || []).map(ingredientLabel).join(", ");
+  card.style.display = "block";
+  card.innerHTML = `
+    <h2 class="section-title">🍳 Rezept ansehen</h2>
+    <div class="title">${escapeHtml(dish.name)} ${dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
+    ${dish.hint ? `<div class="hint">${escapeHtml(dish.hint)}</div>` : ""}
+    ${dish.category ? `<div class="meta">Kategorie: ${escapeHtml(dish.category)}</div>` : ""}
+    <div class="meta">${escapeHtml(ingredients || "Keine Zutaten hinterlegt.")}</div>
+    ${dish.image ? `<img class="recipe-image" src="${dish.image}" alt="Rezeptbild">` : ""}
+    ${dish.doc ? `<div class="actions"><a href="${dish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
+  `;
+  card.scrollIntoView({behavior:"smooth", block:"start"});
+};
 
 window.showTodayCooking = function(){
   renderTodayCard();
@@ -1191,7 +1198,8 @@ window.findIdeas = function(){
 
   const sourceDiv = document.createElement("div");
   sourceDiv.className = "box";
-  sourceDiv.innerHTML = `<div class="title">Berücksichtigte Zutaten</div><div class="meta">${escapeHtml(input.join(", "))}</div>`;
+  sourceDiv.innerHTML = `<div class="title">Berücksichtigte Zutaten</div>
+    <div class="ingredient-chips">${input.map(x => `<span class="ingredient-chip">${escapeHtml(x)}</span>`).join("")}</div>`;
   box.appendChild(sourceDiv);
 
   const savedMatches = state.dishes.map(d => {
@@ -1204,15 +1212,17 @@ window.findIdeas = function(){
   if(savedMatches.length){
     const title = document.createElement("div");
     title.className = "box";
-    title.innerHTML = `<div class="title">Passende gespeicherte Gerichte</div><div class="meta">Zuerst werden deine eigenen Rezepte vorgeschlagen.</div>`;
+    title.innerHTML = `<div class="title">Passende gespeicherte Gerichte</div><div class="meta">Zum Öffnen einfach auf ein Rezept tippen.</div>`;
     box.appendChild(title);
 
     savedMatches.slice(0,6).forEach(item => {
       const div = document.createElement("div");
-      div.className = "recipehint";
+      div.className = "recipehint clickable";
+      div.onclick = () => openDishFromIdea(item.dish.name);
       div.innerHTML = `<div class="title">${escapeHtml(item.dish.name)} ${item.dish.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
         <div class="meta">${item.score} von ${item.total} Zutaten passen</div>
-        ${item.missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(item.missing.join(", "))}</div>` : `<div class="meta">Passt komplett ✅</div>`}`;
+        ${item.missing.length ? `<div class="meta">Fehlt noch: ${escapeHtml(item.missing.join(", "))}</div>` : `<div class="meta">Passt komplett ✅</div>`}
+        <div class="small-note">Tippen zum Öffnen</div>`;
       box.appendChild(div);
     });
   }
@@ -1220,7 +1230,7 @@ window.findIdeas = function(){
   const aiIdeas = aiRecipeIdeasFromIngredients(input);
   const aiHeader = document.createElement("div");
   aiHeader.className = "box";
-  aiHeader.innerHTML = `<div class="title">Bessere KI-Ideen</div><div class="meta">Diese Vorschläge werden direkt aus deinen heutigen Zutaten, deinem Vorrat und dem Gefrierschrank abgeleitet.</div>`;
+  aiHeader.innerHTML = `<div class="title">Weitere Ideen</div><div class="meta">Diese Vorschläge werden direkt aus deinen heutigen Zutaten, deinem Vorrat und dem Gefrierschrank abgeleitet.</div>`;
   box.appendChild(aiHeader);
 
   aiIdeas.forEach(idea => {
