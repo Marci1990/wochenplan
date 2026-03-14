@@ -46,7 +46,7 @@
     .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
     .section-title{margin-bottom:8px}
-    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
+    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}.shopbox.done{opacity:.6}.shopbox.done .shop-edit{text-decoration:line-through}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
   
@@ -118,7 +118,7 @@
       <h2 class="section-title">Resteverwertung / Vorschläge</h2>
       <div class="small-note">Nutzt Vorrat, Gefrierschrank und deine gespeicherten Rezepte.</div>
       <div id="leftoverIdeas" class="list"></div>
-      <h3 style="margin-top:10px">🍽 Lange nicht gekocht</h3>
+      <div class="row" style="margin-top:10px;align-items:center;justify-content:space-between"><h3 style="margin:0">🍽 Lange nicht gekocht</h3><button class="soft small" onclick="cleanupLastCooked()">Liste bereinigen</button></div>
       <div id="longCooked" class="list"></div>
     </section>
 
@@ -150,7 +150,7 @@ Hackfleisch|500|g|Fleisch & Fisch|frisch
 Tomatensoße|2|Gläser|Trockenwaren|
 Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
-      <input id="dishCategory" placeholder="Kategorie z.B. Pasta, Ofen, Pfanne, Salat">
+      <input id="dishCategory" placeholder="Kategorie z.B. Pasta, Ofen, Pfanne, Salat"><div class="small-note">Kategorie kann leer bleiben oder gelöscht werden.</div>
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
@@ -651,7 +651,21 @@ window.restoreBackup = function(event){
   lastCooked: {}
       };
       await save();
-      render();
+      
+window.cleanupLastCooked = async function(){
+  const validNames = new Set((state.dishes || []).map(d => d.name));
+  const cleaned = {};
+  Object.entries(state.lastCooked || {}).forEach(([name, date]) => {
+    if(validNames.has(name) && typeof date === "number"){
+      cleaned[name] = date;
+    }
+  });
+  state.lastCooked = cleaned;
+  await save();
+  renderLongCooked();
+};
+
+render();
     } catch(err){
       alert("Backup konnte nicht geladen werden.");
     }
@@ -668,7 +682,7 @@ window.setPersons = async function(v){
 window.addDish = async function(){
   const name = normalize(document.getElementById("dishName").value);
   const hint = normalize(document.getElementById("dishHint").value);
-  let category = normalize(document.getElementById("dishCategory").value);
+  const category = normalize(document.getElementById("dishCategory").value || "");
   const imageUrl = normalize(document.getElementById("dishImageUrl").value);
   const favorite = document.getElementById("dishFavorite").checked;
   const ingredients = parseIngredients(document.getElementById("dishIngredients").value);
@@ -694,7 +708,7 @@ window.addDish = async function(){
     const dish = {
       name,
       hint,
-      category: category || existingDish?.category || "",
+      category: category,
       image: finalImage,
       doc: docData,
       favorite,
@@ -1286,16 +1300,23 @@ function renderShop(){
       const isDone = !!(state.shoppingDone && state.shoppingDone[item.id || item.key]);
 
       const row = document.createElement("div");
-      row.className = "shopbox";
+      const itemId = item.id || item.key;
+      const isDone = !!(state.shoppingDone && state.shoppingDone[itemId]);
+
+      const row = document.createElement("div");
+      row.className = "shopbox" + (isDone ? " done" : "");
       row.style.marginTop = "8px";
       row.innerHTML = `
-        <div class="shop-head">
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;">
-            <input type="checkbox" onchange="toggleShopDone('${item.id || item.key}', this.checked)" ${state.shoppingDone && state.shoppingDone[item.id || item.key] ? "checked" : ""}> gekauft
-          </label>
-          <div>
-            <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
-            <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
+        <div class="shop-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap;">
+              <input type="checkbox" ${isDone ? "checked" : ""} onchange="toggleShopDone('${itemId}', this.checked)">
+              <span>gekauft</span>
+            </label>
+            <div>
+              <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
+              <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
+            </div>
           </div>
           <div class="actions">
             ${item.auto ? '' : `<button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}
@@ -1306,7 +1327,7 @@ function renderShop(){
           contenteditable="true"
           onkeydown="${item.auto ? `if(event.key==='Enter'){event.preventDefault();saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})}` : `if(event.key==='Enter'){event.preventDefault();saveInlineManualShop('${item.id}', this.innerText)}`}"
           onblur="${item.auto ? `saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})` : `saveInlineManualShop('${item.id}', this.innerText)`}"
-         style="${isDone ? "text-decoration:line-through;opacity:.6;" : ""}">${escapeHtml(line)}</div>
+          style="${isDone ? "text-decoration:line-through;opacity:.6;" : ""}">${escapeHtml(line)}</div>
       `;
       areaDiv.appendChild(row);
     });
@@ -1354,22 +1375,29 @@ function renderLongCooked(){
   const box = document.getElementById("longCooked");
   if(!box) return;
   box.innerHTML = "";
-  const entries = Object.entries(state.lastCooked || {});
+
+  const existingDishNames = new Set((state.dishes || []).map(d => d.name));
+  const entries = Object.entries(state.lastCooked || {})
+    .filter(([name, date]) => existingDishNames.has(name) && typeof date === "number");
+
   const now = Date.now();
-  const arr = entries.map(([name,date])=>{
-    const days = Math.floor((now - date)/(1000*60*60*24));
-    return {name, days};
-  }).sort((a,b)=>b.days-a.days).slice(0,5);
+  const arr = entries
+    .map(([name, date]) => {
+      const days = Math.max(0, Math.floor((now - date) / (1000 * 60 * 60 * 24)));
+      return { name, days, date };
+    })
+    .sort((a, b) => b.days - a.days || a.name.localeCompare(b.name, "de"))
+    .slice(0, 5);
 
   if(!arr.length){
-    box.innerHTML = '<div class="empty">Noch keine Daten vorhanden.</div>';
+    box.innerHTML = '<div class="empty">Noch keine passenden Daten vorhanden.</div>';
     return;
   }
 
-  arr.forEach(x=>{
+  arr.forEach(x => {
     const div = document.createElement("div");
-    div.className="recipehint";
-    div.innerHTML = `<div class="title">${x.name}</div><div class="meta">vor ${x.days} Tagen gekocht</div>`;
+    div.className = "recipehint";
+    div.innerHTML = `<div class="title">${escapeHtml(x.name)}</div><div class="meta">vor ${x.days} Tagen gekocht</div>`;
     box.appendChild(div);
   });
 }
