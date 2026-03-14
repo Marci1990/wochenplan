@@ -1226,12 +1226,12 @@ function renderWeek(){
     row.innerHTML = `
       <div class="title">${day}</div>
       <div class="daycontent">
-        <input value="${escapeHtml(selectedName)}" oninput="updateDay(${i}, this.value)">
+        <input value="${escapeHtml(selectedName)}" onchange="updateDay(${i}, this.value)">
         <select onchange="updateDay(${i}, this.value)">
           <option value="">Gericht wählen</option>
           ${options}
         </select>
-        <textarea class="${noteClass}" placeholder="📝 Notiz, z.B. Salat dazu" oninput="updateNote(${i}, this.value)">${escapeHtml((state.notes && state.notes[i]) || "")}</textarea>
+        <textarea class="${noteClass}" placeholder="📝 Notiz, z.B. Salat dazu" onchange="updateNote(${i}, this.value)">${escapeHtml((state.notes && state.notes[i]) || "")}</textarea>
         ${extra}
       </div>
       <button class="small" onclick="rollDay(${i})">🎲</button>
