@@ -46,7 +46,7 @@
     .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
     .section-title{margin-bottom:8px}
-    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}.shopbox.done{opacity:.6}.shopbox.done .shop-edit{text-decoration:line-through}
+    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
   
@@ -62,23 +62,6 @@
   .title{font-size:16px}
   .shop-edit{font-size:16px}
 }
-
-
-    details.recipe-collapse, details.week-collapse{border:1px solid var(--border);border-radius:14px;background:#fff}
-    details.recipe-collapse summary, details.week-collapse summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:10px}
-    details.recipe-collapse summary::-webkit-details-marker, details.week-collapse summary::-webkit-details-marker{display:none}
-    .collapse-body{padding:0 12px 12px}
-    .summary-sub{font-size:13px;color:var(--muted);font-weight:400}
-    .print-sheet{font-family:Arial,sans-serif;padding:24px;color:#222}
-    .print-sheet h1{margin:0 0 14px;font-size:24px}
-    .print-row{border-bottom:1px solid #ddd;padding:10px 0}
-    .print-day{font-weight:700;margin-bottom:4px}
-    .week-inline-actions{display:flex;gap:8px;flex-wrap:wrap}
-
-
-    details.section-toggle{margin-bottom:16px}
-    details.section-toggle > summary{cursor:pointer;font-weight:700;list-style:none;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:var(--shadow)}
-    details.section-toggle[open] > summary{border-bottom-left-radius:10px;border-bottom-right-radius:10px;margin-bottom:10px}
 
 </style>
 </head>
@@ -118,8 +101,6 @@
       <h2 class="section-title">Resteverwertung / Vorschläge</h2>
       <div class="small-note">Nutzt Vorrat, Gefrierschrank und deine gespeicherten Rezepte.</div>
       <div id="leftoverIdeas" class="list"></div>
-      <div class="row" style="margin-top:10px;align-items:center;justify-content:space-between"><h3 style="margin:0">🍽 Lange nicht gekocht</h3><button class="soft small" onclick="cleanupLastCooked()">Liste bereinigen</button></div>
-      <div id="longCooked" class="list"></div>
     </section>
 
     <section class="card">
@@ -150,7 +131,7 @@ Hackfleisch|500|g|Fleisch & Fisch|frisch
 Tomatensoße|2|Gläser|Trockenwaren|
 Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <input id="dishHint" placeholder="Hinweis z.B. Fleisch auftauen">
-      <input id="dishCategory" placeholder="Kategorie z.B. Pasta, Ofen, Pfanne, Salat"><div class="small-note">Kategorie kann leer bleiben oder gelöscht werden.</div>
+      <input id="dishCategory" placeholder="Kategorie z.B. Pasta, Ofen, Pfanne, Salat">
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
@@ -172,47 +153,39 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
   <div class="grid2">
     <section class="card">
-      <details class="section-toggle" id="savedDishesToggle">
-        <summary>🍽️ Gespeicherte Gerichte anzeigen</summary>
-        <div style="padding-top:12px">
-          <input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()">
-          <div id="dishList" class="list" style="margin-top:10px"></div>
-        </div>
-      </details>
+      <h2 class="section-title">Gespeicherte Gerichte</h2>
+      <input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()">
+      <div id="dishList" class="list" style="margin-top:10px"></div>
     </section>
 
     <section class="card">
-      <details class="section-toggle" id="shoppingToggle">
-        <summary>🛒 Einkaufsliste anzeigen</summary>
-        <div style="padding-top:12px">
-          <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
-          <div class="row" style="margin-top:12px">
-            <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
-            <button onclick="quickAddShopButton()">Schnell hinzufügen</button>
-          </div>
-          <div class="row">
-            <input id="shopName" class="grow" placeholder="Artikel">
-            <input id="shopAmount" class="w110" placeholder="Menge">
-            <input id="shopUnit" class="w110" placeholder="Einheit / Stück">
-          </div>
-          <div class="row">
-            <select id="shopArea" class="grow">
-              <option>Obst & Gemüse</option>
-              <option>Kühlregal</option>
-              <option>Fleisch & Fisch</option>
-              <option>Tiefkühl</option>
-              <option>Trockenwaren</option>
-              <option>Gewürze</option>
-              <option>Getränke</option>
-              <option>Bäckerei</option>
-              <option selected>Sonstiges</option>
-            </select>
-            <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
-            <button onclick="addShop()">Hinzufügen</button>
-          </div>
-          <div id="shopList" class="list"></div>
-        </div>
-      </details>
+      <h2 class="section-title">Einkaufsliste</h2>
+      <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
+      <div class="row" style="margin-top:12px">
+        <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
+        <button onclick="quickAddShopButton()">Schnell hinzufügen</button>
+      </div>
+      <div class="row">
+        <input id="shopName" class="grow" placeholder="Artikel">
+        <input id="shopAmount" class="w110" placeholder="Menge">
+        <input id="shopUnit" class="w110" placeholder="Einheit / Stück">
+      </div>
+      <div class="row">
+        <select id="shopArea" class="grow">
+          <option>Obst & Gemüse</option>
+          <option>Kühlregal</option>
+          <option>Fleisch & Fisch</option>
+          <option>Tiefkühl</option>
+          <option>Trockenwaren</option>
+          <option>Gewürze</option>
+          <option>Getränke</option>
+          <option>Bäckerei</option>
+          <option selected>Sonstiges</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
+        <button onclick="addShop()">Hinzufügen</button>
+      </div>
+      <div id="shopList" class="list"></div>
     </section>
   </div>
 
@@ -299,14 +272,13 @@ let state = {
   dishes: [],
   week: ["","","","","","",""],
   notes: ["","","","","","",""],
+  notes: ["","","","","","",""],
   servings: 2,
   shopping: [],
   stock: [],
   freezer: [],
   shoppingEdits: {},
-  shoppingDone: {},
-  editIndex: null,
-  lastCooked: {}
+  editIndex: null
 };
 
 const normalize = t => String(t || "").trim();
@@ -363,34 +335,11 @@ function ingredientLabel(i){
   return qty ? `${i.name} (${qty})` : i.name;
 }
 
-function namesAreSimilar(a, b){
-  const aToken = ingredientToken(a);
-  const bToken = ingredientToken(b);
-  if(!aToken || !bToken) return false;
-  return aToken === bToken || aToken.includes(bToken) || bToken.includes(aToken);
-}
-
-function unitMatches(a, b){
-  return (a || "").toLowerCase() === (b || "").toLowerCase();
-}
-
-function findMatchingItemInList(item, list){
-  return (list || []).find(entry =>
-    namesAreSimilar(entry.name, item.name) &&
-    unitMatches(entry.unit, item.unit)
-  );
-}
-
-function getInventoryMatch(item){
-  return (
-    findMatchingItemInList(item, state.stock) ||
-    findMatchingItemInList(item, state.freezer) ||
-    findMatchingItemInList(item, state.shopping)
-  );
-}
-
 function stockMatch(item){
-  return getInventoryMatch(item);
+  return state.stock.find(s =>
+    ingredientToken(s.name) === ingredientToken(item.name) &&
+    (s.unit || "").toLowerCase() === (item.unit || "").toLowerCase()
+  );
 }
 
 
@@ -575,7 +524,6 @@ function renderTodayCard(){
 
 window.showTodayCooking = function(){
   renderTodayCard();
-  renderLongCooked();
   const card = document.getElementById("todayCard");
   if(card.style.display === "none"){
     alert("Für heute ist noch nichts im Wochenplan eingetragen.");
@@ -588,10 +536,10 @@ function renderLeftoverIdeas(){
   const box = document.getElementById("leftoverIdeas");
   box.innerHTML = "";
 
-  const available = [
-    ...(state.stock || []),
-    ...(state.freezer || [])
-  ];
+  const available = [...new Set([
+    ...(state.stock || []).map(x => ingredientToken(x.name)),
+    ...(state.freezer || []).map(x => ingredientToken(x.name))
+  ])].filter(Boolean);
 
   if(!available.length){
     box.innerHTML = '<div class="empty">Trage zuerst etwas in Vorrat oder Gefrierschrank ein.</div>';
@@ -599,7 +547,7 @@ function renderLeftoverIdeas(){
   }
 
   const matches = state.dishes.map(d => {
-    const score = (d.ingredients || []).filter(i => findMatchingItemInList(i, available)).length;
+    const score = (d.ingredients || []).filter(i => available.includes(ingredientToken(i.name))).length;
     const total = (d.ingredients || []).length || 1;
     return {dish:d, score, total};
   }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
@@ -647,25 +595,10 @@ window.restoreBackup = function(event){
         stock: Array.isArray(data.stock) ? data.stock : [],
         freezer: Array.isArray(data.freezer) ? data.freezer : [],
         shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
-        editIndex: null,
-  lastCooked: {}
+        editIndex: null
       };
       await save();
-      
-window.cleanupLastCooked = async function(){
-  const validNames = new Set((state.dishes || []).map(d => d.name));
-  const cleaned = {};
-  Object.entries(state.lastCooked || {}).forEach(([name, date]) => {
-    if(validNames.has(name) && typeof date === "number"){
-      cleaned[name] = date;
-    }
-  });
-  state.lastCooked = cleaned;
-  await save();
-  renderLongCooked();
-};
-
-render();
+      render();
     } catch(err){
       alert("Backup konnte nicht geladen werden.");
     }
@@ -682,7 +615,7 @@ window.setPersons = async function(v){
 window.addDish = async function(){
   const name = normalize(document.getElementById("dishName").value);
   const hint = normalize(document.getElementById("dishHint").value);
-  const category = normalize(document.getElementById("dishCategory").value || "");
+  let category = normalize(document.getElementById("dishCategory").value);
   const imageUrl = normalize(document.getElementById("dishImageUrl").value);
   const favorite = document.getElementById("dishFavorite").checked;
   const ingredients = parseIngredients(document.getElementById("dishIngredients").value);
@@ -702,9 +635,7 @@ window.addDish = async function(){
   }
 
   const finish = async (img) => {
-    let finalImage = existingDish?.image || "";
-    if(imageUrl) finalImage = imageUrl;
-    if(img) finalImage = img;
+    const finalImage = img || imageUrl || existingDish?.image || "";
     const dish = {
       name,
       hint,
@@ -824,46 +755,10 @@ window.rollDay = async function(i){
   renderWeek();
   renderShop();
   renderTodayCard();
-  renderLongCooked();
 };
 
 window.printWeek = function(){
-  const rows = DAYS.map((day, i) => {
-    const name = state.week[i] || "—";
-    const note = (state.notes && state.notes[i]) ? `<div style="margin-top:4px;color:#555;">Notiz: ${escapeHtml(state.notes[i])}</div>` : "";
-    return `<div class="print-row"><div class="print-day">${escapeHtml(day)}</div><div>${escapeHtml(name)}</div>${note}</div>`;
-  }).join("");
-
-  const printWindow = window.open("", "_blank", "width=900,height=700");
-  if(!printWindow) return alert("Bitte Popups erlauben, damit der Wochenplan gedruckt werden kann.");
-  printWindow.document.write(`<!DOCTYPE html>
-  <html lang="de">
-  <head>
-    <meta charset="UTF-8">
-    <title>Wochenplan drucken</title>
-    <style>
-      body{font-family:Arial,sans-serif;padding:24px;color:#222}
-      h1{margin:0 0 14px;font-size:24px}
-      .print-row{border-bottom:1px solid #ddd;padding:10px 0;break-inside:avoid}
-      .print-day{font-weight:700;margin-bottom:4px}
-      @media print{
-        body{padding:10mm}
-        button{display:none}
-      }
-    
-    details.section-toggle{margin-bottom:16px}
-    details.section-toggle > summary{cursor:pointer;font-weight:700;list-style:none;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:var(--shadow)}
-    details.section-toggle[open] > summary{border-bottom-left-radius:10px;border-bottom-right-radius:10px;margin-bottom:10px}
-
-</style>
-  </head>
-  <body>
-    <button onclick="window.print()" style="margin-bottom:14px;padding:10px 14px;">🖨️ Jetzt drucken</button>
-    <h1>💛 Familie Hanst Wochenplan</h1>
-    ${rows}
-  </body>
-  </html>`);
-  printWindow.document.close();
+  window.print();
 };
 
 window.clearWeek = async function(){
@@ -874,12 +769,10 @@ window.clearWeek = async function(){
 
 window.updateDay = async function(i, val){
   state.week[i] = val;
-  if(val){ state.lastCooked = state.lastCooked || {}; state.lastCooked[val] = Date.now(); }
   await save();
   renderWeek();
   renderShop();
   renderTodayCard();
-  renderLongCooked();
 };
 
 window.updateNote = async function(i, val){
@@ -905,13 +798,6 @@ window.quickAddShopButton = async function(){
   const parsed = parseQuickShop(text);
   state.shopping.push({ id: Date.now().toString(), ...parsed });
   document.getElementById("shopQuick").value = "";
-  await save();
-  renderShop();
-};
-
-window.toggleShopDone = async function(id, val){
-  state.shoppingDone = state.shoppingDone || {};
-  state.shoppingDone[id] = !!val;
   await save();
   renderShop();
 };
@@ -1042,7 +928,7 @@ window.addFreeze = async function(){
     });
   }
 
-  state.freezer.push({ id: Date.now().toString(), name, amount, unit, date: Date.now() });
+  state.freezer.push({ id: Date.now().toString(), name, amount, unit });
   document.getElementById("freezeName").value = "";
   document.getElementById("freezeAmount").value = "";
   document.getElementById("freezeUnit").value = "";
@@ -1153,12 +1039,7 @@ function renderDishes(){
   const box = document.getElementById("dishList");
   box.innerHTML = "";
   let dishes = state.dishes.slice();
-  if(q) dishes = dishes.filter(d =>
-    d.name.toLowerCase().includes(q) ||
-    (d.category || "").toLowerCase().includes(q) ||
-    (d.ingredients || []).some(i => (i.name || "").toLowerCase().includes(q))
-  );
-
+  if(q) dishes = dishes.filter(d => d.name.toLowerCase().includes(q));
   if(!dishes.length){
     box.innerHTML = '<div class="empty">Noch keine Gerichte gespeichert.</div>';
     return;
@@ -1167,29 +1048,22 @@ function renderDishes(){
   dishes.forEach(d => {
     const i = state.dishes.indexOf(d);
     const preview = (d.ingredients || []).map(ingredientLabel).join(", ");
-    const detail = document.createElement("details");
-    detail.className = "recipe-collapse";
-    if(q) detail.open = true;
-
-    detail.innerHTML = `<summary>
-        <span>${escapeHtml(d.name)} ${d.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</span>
-        <span class="summary-sub">${escapeHtml(d.category || preview || 'Antippen zum Öffnen')}</span>
-      </summary>
-      <div class="collapse-body">
-        ${d.category ? `<div class="meta">Kategorie: ${escapeHtml(d.category)}</div>` : ""}
-        ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
-        <div class="meta">${escapeHtml(preview)}</div>
-        ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
-        ${d.doc ? `<div class="actions"><a href="${d.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
-        <div class="actions">
-          <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
-          <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
-          <button class="soft small" onclick="showMissingForDish(${i})">Was fehlt?</button>
-          <button class="soft small" onclick="duplicateDish(${i})">Duplizieren</button>
-          <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
-        </div>
+    const div = document.createElement("div");
+    div.className = "box";
+    div.innerHTML = `<div class="title">${escapeHtml(d.name)} ${d.favorite ? '<span class="pill pill-fav">Favorit</span>' : ''}</div>
+      ${d.category ? `<div class="meta">Kategorie: ${escapeHtml(d.category)}</div>` : ""}
+      ${d.hint ? `<div class="meta">${escapeHtml(d.hint)}</div>` : ""}
+      <div class="meta">${escapeHtml(preview)}</div>
+      ${d.image ? `<img class="recipe-image" src="${d.image}" alt="Rezeptbild">` : ""}
+      ${d.doc ? `<div class="actions"><a href="${d.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
+      <div class="actions">
+        <button class="soft small" onclick="toggleFavorite(${i})">${d.favorite ? 'Favorit entfernen' : 'Zu Favoriten'}</button>
+        <button class="soft small" onclick="editDish(${i})">Bearbeiten</button>
+        <button class="soft small" onclick="showMissingForDish(${i})">Was fehlt?</button>
+        <button class="soft small" onclick="duplicateDish(${i})">Duplizieren</button>
+        <button class="danger small" onclick="deleteDish(${i})">Löschen</button>
       </div>`;
-    box.appendChild(detail);
+    box.appendChild(div);
   });
 }
 
@@ -1199,15 +1073,11 @@ function renderWeek(){
   const optionsAll = state.dishes.map(d => d.name);
 
   DAYS.forEach((day, i) => {
-    const dish = state.dishes.find(d => d.name === state.week[i]);
     const options = optionsAll
       .map(name => `<option value="${escapeHtml(name)}" ${state.week[i] === name ? "selected" : ""}>${escapeHtml(name)}</option>`)
       .join("");
 
     const noteClass = (state.notes && state.notes[i]) ? "week-note has-note" : "week-note";
-    const ingredientPreview = dish && (dish.ingredients || []).length
-      ? (dish.ingredients || []).map(ingredientLabel).join(", ")
-      : "";
 
     const row = document.createElement("div");
     row.className = "weekrow";
@@ -1219,25 +1089,26 @@ function renderWeek(){
           ${options}
         </select>
         <textarea class="${noteClass}" placeholder="📝 Notiz, z.B. Salat dazu" oninput="updateNote(${i}, this.value)">${escapeHtml((state.notes && state.notes[i]) || "")}</textarea>
-        ${dish ? `
-          <details class="week-collapse">
-            <summary>
-              <span>👀 Rezept & Bild anzeigen</span>
-              <span class="summary-sub">${escapeHtml(dish.name)}</span>
-            </summary>
-            <div class="collapse-body">
-              ${dish.hint ? `<div class="hint">${escapeHtml(dish.hint)}</div>` : ""}
-              ${ingredientPreview ? `<div class="meta">${escapeHtml(ingredientPreview)}</div>` : `<div class="meta">Keine Zutaten hinterlegt.</div>`}
-              ${dish.image ? `<img class="recipe-image" src="${dish.image}" alt="Rezeptbild">` : `<div class="small-note">Kein Bild gespeichert.</div>`}
-              ${dish.doc ? `<div class="actions"><a href="${dish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
-            </div>
-          </details>` : ""}
       </div>
-      <div class="week-inline-actions">
-        <button class="small" onclick="rollDay(${i})">🎲</button>
-      </div>`;
+      <button class="small" onclick="rollDay(${i})">🎲</button>`;
     box.appendChild(row);
   });
+}
+
+
+function isShopDone(id){
+  try{
+    const data = JSON.parse(localStorage.getItem("shopDone") || "{}");
+    return !!data[id];
+  }catch(e){ return false; }
+}
+
+function toggleShopDoneLocal(id, val){
+  try{
+    const data = JSON.parse(localStorage.getItem("shopDone") || "{}");
+    data[id] = val;
+    localStorage.setItem("shopDone", JSON.stringify(data));
+  }catch(e){}
 }
 
 function renderShop(){
@@ -1255,22 +1126,13 @@ function renderShop(){
   });
 
   const reduced = auto.map(item => {
-    const stock = findMatchingItemInList(item, state.stock);
-    const freezer = findMatchingItemInList(item, state.freezer);
-    const manualShop = findMatchingItemInList(item, state.shopping);
-
-    const stockAmount = isNumeric(stock?.amount) ? parseNumber(stock.amount) : 0;
-    const freezerAmount = isNumeric(freezer?.amount) ? parseNumber(freezer.amount) : 0;
-    const manualAmount = isNumeric(manualShop?.amount) ? parseNumber(manualShop.amount) : 0;
-    const reserved = stockAmount + freezerAmount + manualAmount;
-
-    if(isNumeric(item.amount)){
-      const diff = parseNumber(item.amount) - reserved;
+    const stock = stockMatch(item);
+    if(!stock) return item;
+    if(isNumeric(item.amount) && isNumeric(stock.amount)){
+      const diff = parseNumber(item.amount) - parseNumber(stock.amount);
       if(diff <= 0) return null;
       return { ...item, amount:String(diff) };
     }
-
-    if(stock || freezer || manualShop) return null;
     return item;
   }).filter(Boolean);
 
@@ -1297,26 +1159,17 @@ function renderShop(){
       const override = item.auto ? (state.shoppingEdits[item.key] || null) : null;
       const finalItem = override ? { ...item, ...override } : item;
       const line = [finalItem.name, finalItem.amount, finalItem.unit].filter(Boolean).join(" ");
-      const isDone = !!(state.shoppingDone && state.shoppingDone[item.id || item.key]);
 
       const row = document.createElement("div");
       const itemId = item.id || item.key;
-      const isDone = !!(state.shoppingDone && state.shoppingDone[itemId]);
-
-      const row = document.createElement("div");
-      row.className = "shopbox" + (isDone ? " done" : "");
+      const isDone = isShopDone(itemId);
+      row.className = "shopbox";
       row.style.marginTop = "8px";
       row.innerHTML = `
-        <div class="shop-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-          <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap;">
-              <input type="checkbox" ${isDone ? "checked" : ""} onchange="toggleShopDone('${itemId}', this.checked)">
-              <span>gekauft</span>
-            </label>
-            <div>
-              <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
-              <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
-            </div>
+        <div class="shop-head"><label style="display:flex;align-items:center;gap:6px;font-size:14px;"><input type="checkbox" ${isDone ? "checked" : ""} onchange="toggleShopDoneLocal(\'${itemId}\', this.checked)"> gekauft</label>
+          <div>
+            <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
+            <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
           </div>
           <div class="actions">
             ${item.auto ? '' : `<button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}
@@ -1327,7 +1180,7 @@ function renderShop(){
           contenteditable="true"
           onkeydown="${item.auto ? `if(event.key==='Enter'){event.preventDefault();saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})}` : `if(event.key==='Enter'){event.preventDefault();saveInlineManualShop('${item.id}', this.innerText)}`}"
           onblur="${item.auto ? `saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})` : `saveInlineManualShop('${item.id}', this.innerText)`}"
-          style="${isDone ? "text-decoration:line-through;opacity:.6;" : ""}">${escapeHtml(line)}</div>
+        >${escapeHtml(line)}</div>
       `;
       areaDiv.appendChild(row);
     });
@@ -1370,39 +1223,6 @@ function renderFreezer(){
   });
 }
 
-
-function renderLongCooked(){
-  const box = document.getElementById("longCooked");
-  if(!box) return;
-  box.innerHTML = "";
-
-  const existingDishNames = new Set((state.dishes || []).map(d => d.name));
-  const entries = Object.entries(state.lastCooked || {})
-    .filter(([name, date]) => existingDishNames.has(name) && typeof date === "number");
-
-  const now = Date.now();
-  const arr = entries
-    .map(([name, date]) => {
-      const days = Math.max(0, Math.floor((now - date) / (1000 * 60 * 60 * 24)));
-      return { name, days, date };
-    })
-    .sort((a, b) => b.days - a.days || a.name.localeCompare(b.name, "de"))
-    .slice(0, 5);
-
-  if(!arr.length){
-    box.innerHTML = '<div class="empty">Noch keine passenden Daten vorhanden.</div>';
-    return;
-  }
-
-  arr.forEach(x => {
-    const div = document.createElement("div");
-    div.className = "recipehint";
-    div.innerHTML = `<div class="title">${escapeHtml(x.name)}</div><div class="meta">vor ${x.days} Tagen gekocht</div>`;
-    box.appendChild(div);
-  });
-}
-
-
 function render(){
   document.getElementById("servingsSelect").value = String(state.servings || 2);
   renderDishes();
@@ -1412,7 +1232,6 @@ function render(){
   renderFreezer();
   renderLeftoverIdeas();
   renderTodayCard();
-  renderLongCooked();
 }
 
 onSnapshot(ref, snap => {
@@ -1431,9 +1250,7 @@ onSnapshot(ref, snap => {
     stock: Array.isArray(data.stock) ? data.stock : [],
     freezer: Array.isArray(data.freezer) ? data.freezer : [],
     shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
-    shoppingDone: data.shoppingDone && typeof data.shoppingDone === "object" ? data.shoppingDone : {},
-    editIndex: null,
-    lastCooked: data.lastCooked && typeof data.lastCooked === "object" ? data.lastCooked : {}
+    editIndex: null
   };
   updateStatus("Synchronisiert ✅");
   render();
@@ -1455,18 +1272,19 @@ window.duplicateDish = async function(i){
 
 
 
-function hasIngredientAtHome(item){
-  return !!(
-    findMatchingItemInList(item, state.stock) ||
-    findMatchingItemInList(item, state.freezer)
-  );
+function getOwnedIngredientNames(){
+  return [
+    ...(state.stock || []).map(x => ingredientToken(x.name)),
+    ...(state.freezer || []).map(x => ingredientToken(x.name))
+  ];
 }
 
 window.showMissingForDish = function(i){
   const card = document.getElementById("missingCard");
   const dish = state.dishes[i];
   if(!dish){ card.style.display = "none"; return; }
-  const missing = (dish.ingredients || []).filter(x => !hasIngredientAtHome(x));
+  const owned = getOwnedIngredientNames();
+  const missing = (dish.ingredients || []).filter(x => !owned.includes(ingredientToken(x.name)));
   card.style.display = "block";
   card.innerHTML = `
     <h2 class="section-title">🛒 Was fehlt für ${escapeHtml(dish.name)}?</h2>
