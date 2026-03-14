@@ -75,6 +75,11 @@
     .print-day{font-weight:700;margin-bottom:4px}
     .week-inline-actions{display:flex;gap:8px;flex-wrap:wrap}
 
+
+    details.section-toggle{margin-bottom:16px}
+    details.section-toggle > summary{cursor:pointer;font-weight:700;list-style:none;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:var(--shadow)}
+    details.section-toggle[open] > summary{border-bottom-left-radius:10px;border-bottom-right-radius:10px;margin-bottom:10px}
+
 </style>
 </head>
 <body>
@@ -167,39 +172,47 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
   <div class="grid2">
     <section class="card">
-      <h2 class="section-title">Gespeicherte Gerichte</h2>
-      <input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()">
-      <div id="dishList" class="list" style="margin-top:10px"></div>
+      <details class="section-toggle" id="savedDishesToggle">
+        <summary>🍽️ Gespeicherte Gerichte anzeigen</summary>
+        <div style="padding-top:12px">
+          <input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()">
+          <div id="dishList" class="list" style="margin-top:10px"></div>
+        </div>
+      </details>
     </section>
 
     <section class="card">
-      <h2 class="section-title">Einkaufsliste</h2>
-      <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
-      <div class="row" style="margin-top:12px">
-        <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
-        <button onclick="quickAddShopButton()">Schnell hinzufügen</button>
-      </div>
-      <div class="row">
-        <input id="shopName" class="grow" placeholder="Artikel">
-        <input id="shopAmount" class="w110" placeholder="Menge">
-        <input id="shopUnit" class="w110" placeholder="Einheit / Stück">
-      </div>
-      <div class="row">
-        <select id="shopArea" class="grow">
-          <option>Obst & Gemüse</option>
-          <option>Kühlregal</option>
-          <option>Fleisch & Fisch</option>
-          <option>Tiefkühl</option>
-          <option>Trockenwaren</option>
-          <option>Gewürze</option>
-          <option>Getränke</option>
-          <option>Bäckerei</option>
-          <option selected>Sonstiges</option>
-        </select>
-        <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
-        <button onclick="addShop()">Hinzufügen</button>
-      </div>
-      <div id="shopList" class="list"></div>
+      <details class="section-toggle" id="shoppingToggle">
+        <summary>🛒 Einkaufsliste anzeigen</summary>
+        <div style="padding-top:12px">
+          <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
+          <div class="row" style="margin-top:12px">
+            <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
+            <button onclick="quickAddShopButton()">Schnell hinzufügen</button>
+          </div>
+          <div class="row">
+            <input id="shopName" class="grow" placeholder="Artikel">
+            <input id="shopAmount" class="w110" placeholder="Menge">
+            <input id="shopUnit" class="w110" placeholder="Einheit / Stück">
+          </div>
+          <div class="row">
+            <select id="shopArea" class="grow">
+              <option>Obst & Gemüse</option>
+              <option>Kühlregal</option>
+              <option>Fleisch & Fisch</option>
+              <option>Tiefkühl</option>
+              <option>Trockenwaren</option>
+              <option>Gewürze</option>
+              <option>Getränke</option>
+              <option>Bäckerei</option>
+              <option selected>Sonstiges</option>
+            </select>
+            <label style="display:flex;align-items:center;gap:8px;"><input id="shopFresh" type="checkbox" style="width:auto;"> frisch</label>
+            <button onclick="addShop()">Hinzufügen</button>
+          </div>
+          <div id="shopList" class="list"></div>
+        </div>
+      </details>
     </section>
   </div>
 
@@ -286,12 +299,12 @@ let state = {
   dishes: [],
   week: ["","","","","","",""],
   notes: ["","","","","","",""],
-  notes: ["","","","","","",""],
   servings: 2,
   shopping: [],
   stock: [],
   freezer: [],
   shoppingEdits: {},
+  shoppingDone: {},
   editIndex: null,
   lastCooked: {}
 };
@@ -350,11 +363,34 @@ function ingredientLabel(i){
   return qty ? `${i.name} (${qty})` : i.name;
 }
 
-function stockMatch(item){
-  return state.stock.find(s =>
-    ingredientToken(s.name) === ingredientToken(item.name) &&
-    (s.unit || "").toLowerCase() === (item.unit || "").toLowerCase()
+function namesAreSimilar(a, b){
+  const aToken = ingredientToken(a);
+  const bToken = ingredientToken(b);
+  if(!aToken || !bToken) return false;
+  return aToken === bToken || aToken.includes(bToken) || bToken.includes(aToken);
+}
+
+function unitMatches(a, b){
+  return (a || "").toLowerCase() === (b || "").toLowerCase();
+}
+
+function findMatchingItemInList(item, list){
+  return (list || []).find(entry =>
+    namesAreSimilar(entry.name, item.name) &&
+    unitMatches(entry.unit, item.unit)
   );
+}
+
+function getInventoryMatch(item){
+  return (
+    findMatchingItemInList(item, state.stock) ||
+    findMatchingItemInList(item, state.freezer) ||
+    findMatchingItemInList(item, state.shopping)
+  );
+}
+
+function stockMatch(item){
+  return getInventoryMatch(item);
 }
 
 
@@ -552,10 +588,10 @@ function renderLeftoverIdeas(){
   const box = document.getElementById("leftoverIdeas");
   box.innerHTML = "";
 
-  const available = [...new Set([
-    ...(state.stock || []).map(x => ingredientToken(x.name)),
-    ...(state.freezer || []).map(x => ingredientToken(x.name))
-  ])].filter(Boolean);
+  const available = [
+    ...(state.stock || []),
+    ...(state.freezer || [])
+  ];
 
   if(!available.length){
     box.innerHTML = '<div class="empty">Trage zuerst etwas in Vorrat oder Gefrierschrank ein.</div>';
@@ -563,7 +599,7 @@ function renderLeftoverIdeas(){
   }
 
   const matches = state.dishes.map(d => {
-    const score = (d.ingredients || []).filter(i => available.includes(ingredientToken(i.name))).length;
+    const score = (d.ingredients || []).filter(i => findMatchingItemInList(i, available)).length;
     const total = (d.ingredients || []).length || 1;
     return {dish:d, score, total};
   }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
@@ -652,7 +688,9 @@ window.addDish = async function(){
   }
 
   const finish = async (img) => {
-    const finalImage = img || imageUrl || existingDish?.image || "";
+    let finalImage = existingDish?.image || "";
+    if(imageUrl) finalImage = imageUrl;
+    if(img) finalImage = img;
     const dish = {
       name,
       hint,
@@ -798,7 +836,12 @@ window.printWeek = function(){
         body{padding:10mm}
         button{display:none}
       }
-    </style>
+    
+    details.section-toggle{margin-bottom:16px}
+    details.section-toggle > summary{cursor:pointer;font-weight:700;list-style:none;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:var(--shadow)}
+    details.section-toggle[open] > summary{border-bottom-left-radius:10px;border-bottom-right-radius:10px;margin-bottom:10px}
+
+</style>
   </head>
   <body>
     <button onclick="window.print()" style="margin-bottom:14px;padding:10px 14px;">🖨️ Jetzt drucken</button>
@@ -848,6 +891,13 @@ window.quickAddShopButton = async function(){
   const parsed = parseQuickShop(text);
   state.shopping.push({ id: Date.now().toString(), ...parsed });
   document.getElementById("shopQuick").value = "";
+  await save();
+  renderShop();
+};
+
+window.toggleShopDone = async function(id, val){
+  state.shoppingDone = state.shoppingDone || {};
+  state.shoppingDone[id] = !!val;
   await save();
   renderShop();
 };
@@ -978,7 +1028,7 @@ window.addFreeze = async function(){
     });
   }
 
-  state.freezer.push({ id: Date.now().toString(), name, amount, unit });
+  state.freezer.push({ id: Date.now().toString(), name, amount, unit, date: Date.now() });
   document.getElementById("freezeName").value = "";
   document.getElementById("freezeAmount").value = "";
   document.getElementById("freezeUnit").value = "";
@@ -1191,13 +1241,22 @@ function renderShop(){
   });
 
   const reduced = auto.map(item => {
-    const stock = stockMatch(item);
-    if(!stock) return item;
-    if(isNumeric(item.amount) && isNumeric(stock.amount)){
-      const diff = parseNumber(item.amount) - parseNumber(stock.amount);
+    const stock = findMatchingItemInList(item, state.stock);
+    const freezer = findMatchingItemInList(item, state.freezer);
+    const manualShop = findMatchingItemInList(item, state.shopping);
+
+    const stockAmount = isNumeric(stock?.amount) ? parseNumber(stock.amount) : 0;
+    const freezerAmount = isNumeric(freezer?.amount) ? parseNumber(freezer.amount) : 0;
+    const manualAmount = isNumeric(manualShop?.amount) ? parseNumber(manualShop.amount) : 0;
+    const reserved = stockAmount + freezerAmount + manualAmount;
+
+    if(isNumeric(item.amount)){
+      const diff = parseNumber(item.amount) - reserved;
       if(diff <= 0) return null;
       return { ...item, amount:String(diff) };
     }
+
+    if(stock || freezer || manualShop) return null;
     return item;
   }).filter(Boolean);
 
@@ -1224,12 +1283,16 @@ function renderShop(){
       const override = item.auto ? (state.shoppingEdits[item.key] || null) : null;
       const finalItem = override ? { ...item, ...override } : item;
       const line = [finalItem.name, finalItem.amount, finalItem.unit].filter(Boolean).join(" ");
+      const isDone = !!(state.shoppingDone && state.shoppingDone[item.id || item.key]);
 
       const row = document.createElement("div");
       row.className = "shopbox";
       row.style.marginTop = "8px";
       row.innerHTML = `
         <div class="shop-head">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;">
+            <input type="checkbox" onchange="toggleShopDone('${item.id || item.key}', this.checked)" ${state.shoppingDone && state.shoppingDone[item.id || item.key] ? "checked" : ""}> gekauft
+          </label>
           <div>
             <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
             <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
@@ -1243,7 +1306,7 @@ function renderShop(){
           contenteditable="true"
           onkeydown="${item.auto ? `if(event.key==='Enter'){event.preventDefault();saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})}` : `if(event.key==='Enter'){event.preventDefault();saveInlineManualShop('${item.id}', this.innerText)}`}"
           onblur="${item.auto ? `saveInlineAutoShop('${item.key}', this.innerText, '${escapeHtml(finalItem.area || area)}', ${finalItem.fresh ? 'true' : 'false'})` : `saveInlineManualShop('${item.id}', this.innerText)`}"
-        >${escapeHtml(line)}</div>
+         style="${isDone ? "text-decoration:line-through;opacity:.6;" : ""}">${escapeHtml(line)}</div>
       `;
       areaDiv.appendChild(row);
     });
@@ -1340,8 +1403,9 @@ onSnapshot(ref, snap => {
     stock: Array.isArray(data.stock) ? data.stock : [],
     freezer: Array.isArray(data.freezer) ? data.freezer : [],
     shoppingEdits: data.shoppingEdits && typeof data.shoppingEdits === "object" ? data.shoppingEdits : {},
+    shoppingDone: data.shoppingDone && typeof data.shoppingDone === "object" ? data.shoppingDone : {},
     editIndex: null,
-  lastCooked: {}
+    lastCooked: data.lastCooked && typeof data.lastCooked === "object" ? data.lastCooked : {}
   };
   updateStatus("Synchronisiert ✅");
   render();
@@ -1363,19 +1427,18 @@ window.duplicateDish = async function(i){
 
 
 
-function getOwnedIngredientNames(){
-  return [
-    ...(state.stock || []).map(x => ingredientToken(x.name)),
-    ...(state.freezer || []).map(x => ingredientToken(x.name))
-  ];
+function hasIngredientAtHome(item){
+  return !!(
+    findMatchingItemInList(item, state.stock) ||
+    findMatchingItemInList(item, state.freezer)
+  );
 }
 
 window.showMissingForDish = function(i){
   const card = document.getElementById("missingCard");
   const dish = state.dishes[i];
   if(!dish){ card.style.display = "none"; return; }
-  const owned = getOwnedIngredientNames();
-  const missing = (dish.ingredients || []).filter(x => !owned.includes(ingredientToken(x.name)));
+  const missing = (dish.ingredients || []).filter(x => !hasIngredientAtHome(x));
   card.style.display = "block";
   card.innerHTML = `
     <h2 class="section-title">🛒 Was fehlt für ${escapeHtml(dish.name)}?</h2>
