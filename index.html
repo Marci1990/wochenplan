@@ -46,7 +46,7 @@
     .empty{color:var(--muted);font-size:14px}.small-note{font-size:13px;color:var(--muted)}
     .recipe-image{max-width:100%;max-height:190px;border-radius:12px;border:1px solid var(--border);margin-top:10px;object-fit:cover}
     .section-title{margin-bottom:8px}
-    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
+    .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}.shopbox.done{opacity:.72}.shopbox.done .shop-edit{text-decoration:line-through}.week-extra{margin-top:8px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:#fffafc}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
   
@@ -159,7 +159,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
     </section>
 
     <section class="card">
-      <h2 class="section-title">Einkaufsliste</h2>
+      <h2 class="section-title">Einkaufsliste</h2><div class="row"><button class="soft small" onclick="resetShopDone()">Alle Haken entfernen</button></div>
       <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
       <div class="row" style="margin-top:12px">
         <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
@@ -281,6 +281,10 @@ let state = {
   editIndex: null
 };
 
+let uiState = {
+  weekDetailsOpen: {}
+};
+
 const normalize = t => String(t || "").trim();
 const escapeHtml = t => String(t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const parseNumber = v => parseFloat(String(v).replace(",", "."));
@@ -335,11 +339,28 @@ function ingredientLabel(i){
   return qty ? `${i.name} (${qty})` : i.name;
 }
 
-function stockMatch(item){
-  return state.stock.find(s =>
-    ingredientToken(s.name) === ingredientToken(item.name) &&
-    (s.unit || "").toLowerCase() === (item.unit || "").toLowerCase()
+function namesAreSimilar(a, b){
+  const aToken = ingredientToken(a);
+  const bToken = ingredientToken(b);
+  if(!aToken || !bToken) return false;
+  return aToken === bToken || aToken.includes(bToken) || bToken.includes(aToken);
+}
+
+function unitMatches(a, b){
+  const ua = (a || "").toLowerCase().trim();
+  const ub = (b || "").toLowerCase().trim();
+  return ua === ub;
+}
+
+function findMatchingItemInList(item, list){
+  return (list || []).find(entry =>
+    namesAreSimilar(entry.name, item.name) &&
+    unitMatches(entry.unit, item.unit)
   );
+}
+
+function stockMatch(item){
+  return findMatchingItemInList(item, state.stock);
 }
 
 
@@ -522,6 +543,53 @@ function renderTodayCard(){
   `;
 }
 
+
+function getShopDoneMap(){
+  try{
+    return JSON.parse(localStorage.getItem("shopDoneMap") || "{}");
+  }catch(e){
+    return {};
+  }
+}
+
+function isShopDone(id){
+  const map = getShopDoneMap();
+  return !!map[id];
+}
+
+function setShopDone(id, val){
+  const map = getShopDoneMap();
+  if(val){
+    map[id] = true;
+  } else {
+    delete map[id];
+  }
+  localStorage.setItem("shopDoneMap", JSON.stringify(map));
+}
+
+window.toggleShopDone = function(id, checked){
+  setShopDone(id, checked);
+  renderShop();
+};
+
+window.resetShopDone = function(){
+  localStorage.removeItem("shopDoneMap");
+  renderShop();
+};
+
+window.toggleWeekDetails = function(i){
+  uiState.weekDetailsOpen[i] = !uiState.weekDetailsOpen[i];
+  renderWeek();
+};
+
+function hasIngredientAtHome(item){
+  return !!(
+    findMatchingItemInList(item, state.stock) ||
+    findMatchingItemInList(item, state.freezer) ||
+    findMatchingItemInList(item, state.shopping)
+  );
+}
+
 window.showTodayCooking = function(){
   renderTodayCard();
   const card = document.getElementById("todayCard");
@@ -536,10 +604,10 @@ function renderLeftoverIdeas(){
   const box = document.getElementById("leftoverIdeas");
   box.innerHTML = "";
 
-  const available = [...new Set([
-    ...(state.stock || []).map(x => ingredientToken(x.name)),
-    ...(state.freezer || []).map(x => ingredientToken(x.name))
-  ])].filter(Boolean);
+  const available = [
+    ...(state.stock || []),
+    ...(state.freezer || [])
+  ];
 
   if(!available.length){
     box.innerHTML = '<div class="empty">Trage zuerst etwas in Vorrat oder Gefrierschrank ein.</div>';
@@ -547,7 +615,7 @@ function renderLeftoverIdeas(){
   }
 
   const matches = state.dishes.map(d => {
-    const score = (d.ingredients || []).filter(i => available.includes(ingredientToken(i.name))).length;
+    const score = (d.ingredients || []).filter(i => findMatchingItemInList(i, available)).length;
     const total = (d.ingredients || []).length || 1;
     return {dish:d, score, total};
   }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
@@ -635,7 +703,9 @@ window.addDish = async function(){
   }
 
   const finish = async (img) => {
-    const finalImage = img || imageUrl || existingDish?.image || "";
+    let finalImage = existingDish?.image || "";
+    if(imageUrl) finalImage = imageUrl;
+    if(img) finalImage = img;
     const dish = {
       name,
       hint,
@@ -758,7 +828,56 @@ window.rollDay = async function(i){
 };
 
 window.printWeek = function(){
-  window.print();
+  const rows = DAYS.map((day, i) => {
+    const name = state.week[i] || "—";
+    const note = (state.notes && state.notes[i]) ? String(state.notes[i]) : "";
+    return `
+      <tr>
+        <td style="padding:10px;border:1px solid #ddd;font-weight:700;">${escapeHtml(day)}</td>
+        <td style="padding:10px;border:1px solid #ddd;">${escapeHtml(name)}</td>
+        <td style="padding:10px;border:1px solid #ddd;">${escapeHtml(note)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const win = window.open("", "_blank", "width=900,height=700");
+  if(!win){
+    alert("Bitte Popups für das Drucken erlauben.");
+    return;
+  }
+
+  win.document.write(`
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+      <meta charset="UTF-8">
+      <title>Wochenplan drucken</title>
+      <style>
+        body{font-family:Arial,sans-serif;padding:24px;color:#222}
+        h1{margin:0 0 16px}
+        table{width:100%;border-collapse:collapse}
+        th{padding:10px;border:1px solid #ddd;text-align:left;background:#f7f7f7}
+        @media print{
+          body{padding:0}
+        }
+      </style>
+    </head>
+    <body>
+      <h1>💛 Wochenplan</h1>
+      <table>
+        <thead>
+          <tr><th>Tag</th><th>Gericht</th><th>Notiz</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body>
+    </html>
+  `);
+  win.document.close();
+  setTimeout(() => {
+    win.focus();
+    win.print();
+  }, 250);
 };
 
 window.clearWeek = async function(){
@@ -1073,42 +1192,52 @@ function renderWeek(){
   const optionsAll = state.dishes.map(d => d.name);
 
   DAYS.forEach((day, i) => {
-    const options = optionsAll
-      .map(name => `<option value="${escapeHtml(name)}" ${state.week[i] === name ? "selected" : ""}>${escapeHtml(name)}</option>`)
-      .join("");
+    const selectedName = state.week[i] || "";
+    const selectedDish = state.dishes.find(d => d.name === selectedName);
+    const isOpen = !!uiState.weekDetailsOpen[i];
 
-    const noteClass = (state.notes && state.notes[i]) ? "week-note has-note" : "week-note";
+    const options = optionsAll
+      .map(name => `<option value="${escapeHtml(name)}" ${selectedName === name ? "selected" : ""}>${escapeHtml(name)}</option>`)
+      .join("");
 
     const row = document.createElement("div");
     row.className = "weekrow";
-    row.innerHTML = `<div class="title">${day}</div>
+
+    let extra = "";
+    if(selectedDish){
+      const ingredients = (selectedDish.ingredients || []).map(ingredientLabel).join(", ");
+      extra = `
+        <div class="actions" style="margin-top:6px;">
+          <button class="soft small" onclick="toggleWeekDetails(${i})">${isOpen ? '🙈 Rezept & Bild ausblenden' : '👀 Rezept & Bild anzeigen'}</button>
+        </div>
+        ${isOpen ? `
+          <div class="week-extra">
+            ${selectedDish.hint ? `<div class="hint">${escapeHtml(selectedDish.hint)}</div>` : ""}
+            <div class="meta">${escapeHtml(ingredients || "Keine Zutaten hinterlegt.")}</div>
+            ${selectedDish.image ? `<img class="recipe-image" src="${selectedDish.image}" alt="Rezeptbild">` : ""}
+            ${selectedDish.doc ? `<div class="actions"><a href="${selectedDish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
+          </div>
+        ` : ""}
+      `;
+    }
+
+    const noteClass = (state.notes && state.notes[i]) ? "week-note has-note" : "week-note";
+
+    row.innerHTML = `
+      <div class="title">${day}</div>
       <div class="daycontent">
-        <input value="${escapeHtml(state.week[i] || "")}" oninput="updateDay(${i}, this.value)">
+        <input value="${escapeHtml(selectedName)}" oninput="updateDay(${i}, this.value)">
         <select onchange="updateDay(${i}, this.value)">
           <option value="">Gericht wählen</option>
           ${options}
         </select>
         <textarea class="${noteClass}" placeholder="📝 Notiz, z.B. Salat dazu" oninput="updateNote(${i}, this.value)">${escapeHtml((state.notes && state.notes[i]) || "")}</textarea>
+        ${extra}
       </div>
-      <button class="small" onclick="rollDay(${i})">🎲</button>`;
+      <button class="small" onclick="rollDay(${i})">🎲</button>
+    `;
     box.appendChild(row);
   });
-}
-
-
-function isShopDone(id){
-  try{
-    const data = JSON.parse(localStorage.getItem("shopDone") || "{}");
-    return !!data[id];
-  }catch(e){ return false; }
-}
-
-function toggleShopDoneLocal(id, val){
-  try{
-    const data = JSON.parse(localStorage.getItem("shopDone") || "{}");
-    data[id] = val;
-    localStorage.setItem("shopDone", JSON.stringify(data));
-  }catch(e){}
 }
 
 function renderShop(){
@@ -1121,18 +1250,32 @@ function renderShop(){
     if(!dish) return;
     (dish.ingredients || []).forEach(i => auto.push({
       key: ingredientToken(i.name || "") + "|" + (i.unit || "").toLowerCase(),
-      name:i.name, amount:scaleAmount(i.amount), unit:i.unit, area:i.area || "Sonstiges", fresh:!!i.fresh, auto:true
+      name:i.name,
+      amount:scaleAmount(i.amount),
+      unit:i.unit,
+      area:i.area || "Sonstiges",
+      fresh:!!i.fresh,
+      auto:true
     }));
   });
 
   const reduced = auto.map(item => {
-    const stock = stockMatch(item);
-    if(!stock) return item;
-    if(isNumeric(item.amount) && isNumeric(stock.amount)){
-      const diff = parseNumber(item.amount) - parseNumber(stock.amount);
+    const stock = findMatchingItemInList(item, state.stock);
+    const freezer = findMatchingItemInList(item, state.freezer);
+    const manualShop = findMatchingItemInList(item, state.shopping);
+
+    const stockAmount = isNumeric(stock?.amount) ? parseNumber(stock.amount) : 0;
+    const freezerAmount = isNumeric(freezer?.amount) ? parseNumber(freezer.amount) : 0;
+    const manualAmount = isNumeric(manualShop?.amount) ? parseNumber(manualShop.amount) : 0;
+    const reserved = stockAmount + freezerAmount + manualAmount;
+
+    if(isNumeric(item.amount)){
+      const diff = parseNumber(item.amount) - reserved;
       if(diff <= 0) return null;
       return { ...item, amount:String(diff) };
     }
+
+    if(stock || freezer || manualShop) return null;
     return item;
   }).filter(Boolean);
 
@@ -1150,7 +1293,7 @@ function renderShop(){
     groups[area].push(item);
   });
 
-  SUPERMARKET_ORDER.filter(a=>groups[a]).forEach(area => {
+  SUPERMARKET_ORDER.filter(a => groups[a]).forEach(area => {
     const areaDiv = document.createElement("div");
     areaDiv.className = "box";
     areaDiv.innerHTML = `<div class="title">${escapeHtml(area)}</div>`;
@@ -1159,17 +1302,23 @@ function renderShop(){
       const override = item.auto ? (state.shoppingEdits[item.key] || null) : null;
       const finalItem = override ? { ...item, ...override } : item;
       const line = [finalItem.name, finalItem.amount, finalItem.unit].filter(Boolean).join(" ");
+      const itemId = item.id || item.key;
+      const done = isShopDone(itemId);
 
       const row = document.createElement("div");
-      const itemId = item.id || item.key;
-      const isDone = isShopDone(itemId);
-      row.className = "shopbox";
+      row.className = "shopbox" + (done ? " done" : "");
       row.style.marginTop = "8px";
       row.innerHTML = `
-        <div class="shop-head"><label style="display:flex;align-items:center;gap:6px;font-size:14px;"><input type="checkbox" ${isDone ? "checked" : ""} onchange="toggleShopDoneLocal(\'${itemId}\', this.checked)"> gekauft</label>
-          <div>
-            <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
-            <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
+        <div class="shop-head">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap;">
+              <input type="checkbox" ${done ? "checked" : ""} onchange="toggleShopDone('${itemId}', this.checked)">
+              <span>gekauft</span>
+            </label>
+            <div>
+              <div class="title">${item.auto ? 'Auto-Artikel' : 'Manueller Artikel'} ${finalItem.fresh ? '<span class="pill pill-fresh">frisch</span>' : ''}</div>
+              <div class="small-note">Einfach direkt im Feld ändern. Enter drücken oder raus tippen.</div>
+            </div>
           </div>
           <div class="actions">
             ${item.auto ? '' : `<button class="danger small" onclick="deleteShop('${item.id}')">Löschen</button>`}
@@ -1272,19 +1421,11 @@ window.duplicateDish = async function(i){
 
 
 
-function getOwnedIngredientNames(){
-  return [
-    ...(state.stock || []).map(x => ingredientToken(x.name)),
-    ...(state.freezer || []).map(x => ingredientToken(x.name))
-  ];
-}
-
 window.showMissingForDish = function(i){
   const card = document.getElementById("missingCard");
   const dish = state.dishes[i];
   if(!dish){ card.style.display = "none"; return; }
-  const owned = getOwnedIngredientNames();
-  const missing = (dish.ingredients || []).filter(x => !owned.includes(ingredientToken(x.name)));
+  const missing = (dish.ingredients || []).filter(x => !hasIngredientAtHome(x));
   card.style.display = "block";
   card.innerHTML = `
     <h2 class="section-title">🛒 Was fehlt für ${escapeHtml(dish.name)}?</h2>
