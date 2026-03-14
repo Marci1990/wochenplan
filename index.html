@@ -98,9 +98,7 @@
 
   <div class="grid2">
     <section class="card">
-      <h2 class="section-title">🧊 Gefrierschrank Erinnerung</h2>
-      <div class="small-note">Zeigt dir, was schon lange eingefroren ist und bald verbraucht werden sollte.</div>
-      <div id="leftoverIdeas" class="list"></div>
+      
     </section>
 
     <section class="card">
@@ -159,7 +157,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
     </section>
 
     <section class="card">
-      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Einkaufsliste</h2><button type="button" class="soft small" data-label="Einkaufsliste" onclick="toggleSection('shopList', this)">▶ Einkaufsliste</button></div><div class="row"><button class="soft small" onclick="resetShopDone()">Alle Haken entfernen</button></div>
+      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Einkaufsliste</h2><button type="button" class="soft small" data-label="Einkaufsliste" onclick="toggleSection('shopList', this)">▶ Einkaufsliste</button></div><div class="row"><button class="soft small" onclick="resetShopDone()">Alle Haken entfernen</button><button class="soft small" onclick="printShoppingList()">PDF</button></div>
       <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
       <div class="row" style="margin-top:12px">
         <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
@@ -191,7 +189,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
   <div class="grid2">
     <section class="card">
-      <h2 class="section-title">Vorrat</h2>
+      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Vorrat</h2><button type="button" class="soft small" data-label="Vorrat" onclick="toggleSection('stockList', this)">▼ Vorrat</button></div>
       <div class="small-note">Wird automatisch von der Einkaufsliste abgezogen.</div>
       <div class="row" style="margin-top:12px">
         <input id="stockName" class="grow" placeholder="Artikel">
@@ -203,15 +201,16 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
     </section>
 
     <section class="card">
-      <h2 class="section-title">Gefrierschrank</h2>
-      <div class="small-note">Wird bei den Koch-Ideen automatisch mit berücksichtigt.</div>
+      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Gefrierschrank</h2><button type="button" class="soft small" data-label="Gefrierschrank" onclick="toggleSection('freezerSection', this)">▼ Gefrierschrank</button></div>
+      <div id="freezerSection"><div class="small-note">Wird bei den Koch-Ideen automatisch mit berücksichtigt.</div>
       <div class="row" style="margin-top:12px">
         <input id="freezeName" class="grow" placeholder="z.B. Hackfleisch, Suppe, Brot">
         <input id="freezeAmount" class="w110" placeholder="Menge">
         <input id="freezeUnit" class="w110" placeholder="Einheit / Stück">
+        <input id="freezeDate" class="w120" type="date" title="Eingefroren am">
         <button onclick="addFreeze()">Hinzufügen</button>
       </div>
-      <div id="freezeList" class="list"></div>
+      <div id="freezeList" class="list"></div></div>
     </section>
   </div>
 
@@ -572,6 +571,65 @@ window.toggleShopDone = function(id, checked){
   renderShop();
 };
 
+
+
+window.showMissingIngredients = function(){
+  const missing = [];
+
+  state.week.forEach(name=>{
+    const dish = state.dishes.find(d=>d.name===name);
+    if(!dish) return;
+
+    (dish.ingredients||[]).forEach(i=>{
+      if(!hasIngredientAtHome(i)){
+        missing.push(i.name + " " + (i.amount||"") + " " + (i.unit||""));
+      }
+    });
+  });
+
+  if(!missing.length){
+    alert("Alle Zutaten sind im Vorrat oder Gefrierschrank.");
+    return;
+  }
+
+  alert("Fehlende Zutaten:\n\n"+missing.join("\n"));
+};
+
+window.printShoppingList = function(){
+  const items = [];
+  const shopBoxes = document.querySelectorAll("#shopList .shop-edit");
+  shopBoxes.forEach(el=>{
+    const t = el.innerText.trim();
+    if(t) items.push(t);
+  });
+
+  if(!items.length){
+    alert("Einkaufsliste ist leer.");
+    return;
+  }
+
+  const rows = items.map(x=>`<tr><td style="padding:8px;border:1px solid #ddd;">${x}</td></tr>`).join("");
+
+  const win = window.open("", "_blank","width=700,height=600");
+  win.document.write(`
+    <html>
+    <head>
+      <title>Einkaufsliste</title>
+      <style>
+        body{font-family:Arial;padding:20px}
+        table{width:100%;border-collapse:collapse}
+      </style>
+    </head>
+    <body>
+      <h2>🛒 Einkaufsliste <button class='soft small' onclick='showMissingIngredients()'>nur fehlende Zutaten</button></h2>
+      <table>${rows}</table>
+    </body>
+    </html>
+  `);
+  win.document.close();
+  setTimeout(()=>{win.print();},300);
+};
+
 window.resetShopDone = function(){
   localStorage.removeItem("shopDoneMap");
   renderShop();
@@ -599,6 +657,31 @@ window.showTodayCooking = function(){
   }
   card.scrollIntoView({behavior:"smooth", block:"start"});
 };
+
+
+function renderFreezerRecipeIdeas(){
+  const box = document.getElementById("leftoverIdeas");
+  if(!box) return;
+
+  const freezerNames = (state.freezer||[]).map(x=>ingredientToken(x.name));
+
+  const matches = state.dishes.filter(d=>{
+    return (d.ingredients||[]).some(i=>freezerNames.includes(ingredientToken(i.name)));
+  }).slice(0,5);
+
+  const wrap = document.createElement("div");
+  wrap.className="box";
+  wrap.innerHTML="<div class='title'>🍳 Gerichte mit Gefrierschrank Zutaten</div>";
+
+  matches.forEach(d=>{
+    const el=document.createElement("div");
+    el.className="recipehint";
+    el.innerHTML="<div class='title'>"+d.name+"</div>";
+    wrap.appendChild(el);
+  });
+
+  box.prepend(wrap);
+}
 
 function renderLeftoverIdeas(){
   const box = document.getElementById("leftoverIdeas");
@@ -1018,7 +1101,7 @@ window.addStock = async function(){
   await save();
   renderStock();
   renderShop();
-  renderLeftoverIdeas();
+   renderFreezerRecipeIdeas();
 };
 
 window.editStock = async function(id){
@@ -1036,7 +1119,7 @@ window.editStock = async function(id){
   await save();
   renderStock();
   renderShop();
-  renderLeftoverIdeas();
+   renderFreezerRecipeIdeas();
 };
 
 window.deleteStock = async function(id){
@@ -1044,7 +1127,7 @@ window.deleteStock = async function(id){
   await save();
   renderStock();
   renderShop();
-  renderLeftoverIdeas();
+   renderFreezerRecipeIdeas();
 };
 
 window.addFreeze = async function(){
@@ -1069,7 +1152,7 @@ window.addFreeze = async function(){
   document.getElementById("freezeUnit").value = "";
   await save();
   renderFreezer();
-  renderLeftoverIdeas();
+   renderFreezerRecipeIdeas();
 };
 
 window.editFreeze = async function(id){
@@ -1086,14 +1169,14 @@ window.editFreeze = async function(id){
   item.unit = normalize(unit);
   await save();
   renderFreezer();
-  renderLeftoverIdeas();
+   renderFreezerRecipeIdeas();
 };
 
 window.deleteFreeze = async function(id){
   state.freezer = state.freezer.filter(x => x.id !== id);
   await save();
   renderFreezer();
-  renderLeftoverIdeas();
+   renderFreezerRecipeIdeas();
 };
 
 window.findIdeas = function(){
@@ -1382,7 +1465,8 @@ function renderFreezer(){
     const div = document.createElement("div");
     div.className = "simpleitem";
     const label = [item.amount, item.unit].filter(Boolean).join(" ");
-    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}</span>
+    const frozenDate = item.date ? new Date(item.date).toLocaleDateString("de-DE") : "";
+    div.innerHTML = `<span>${escapeHtml(item.name)}${label ? " – " + escapeHtml(label) : ""}${frozenDate ? " • eingefroren am " + escapeHtml(frozenDate) : ""}</span>
       <div class="actions"><button class="soft small" onclick="editFreeze('${item.id}')">Ändern</button><button class="danger small" onclick="deleteFreeze('${item.id}')">Löschen</button></div>`;
     box.appendChild(div);
   });
@@ -1395,7 +1479,7 @@ function render(){
   renderShop();
   renderStock();
   renderFreezer();
-  renderLeftoverIdeas();
+   renderFreezerRecipeIdeas();
   renderTodayCard();
 }
 
