@@ -153,13 +153,13 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
 
   <div class="grid2">
     <section class="card">
-      <h2 class="section-title" style="cursor:pointer" onclick="toggleSection('dishList')">▶ Gespeicherte Gerichte (klicken zum auf/zu)</h2>
+      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Gespeicherte Gerichte</h2><button type="button" class="soft small" data-label="Gespeicherte Gerichte" onclick="toggleSection('dishList', this)">▶ Gespeicherte Gerichte</button></div>
       <input id="recipeSearch" placeholder="Gerichte suchen..." oninput="renderDishes()">
       <div id="dishList" class="list" style="margin-top:10px;display:none"></div>
     </section>
 
     <section class="card">
-      <h2 class="section-title" style="cursor:pointer" onclick="toggleSection('shopList')">▶ Einkaufsliste (klicken zum auf/zu)</h2><div class="row"><button class="soft small" onclick="resetShopDone()">Alle Haken entfernen</button></div>
+      <div class="row" style="justify-content:space-between;align-items:center;"><h2 class="section-title" style="margin:0;">Einkaufsliste</h2><button type="button" class="soft small" data-label="Einkaufsliste" onclick="toggleSection('shopList', this)">▶ Einkaufsliste</button></div><div class="row"><button class="soft small" onclick="resetShopDone()">Alle Haken entfernen</button></div>
       <div class="small-note">Schnell schreiben: z.B. <b>Tomaten 4 Stück</b> und Enter. Danach jeden Eintrag direkt im Feld ändern, ohne Popups.</div>
       <div class="row" style="margin-top:12px">
         <input id="shopQuick" style="font-size:16px" class="grow" placeholder="Schnell eingeben, z.B. Tomaten 4 Stück" onkeydown="quickAddShop(event)">
@@ -667,14 +667,6 @@ window.restoreBackup = function(event){
       };
       await save();
       
-window.toggleSection = function(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  const hidden = el.style.display === "none";
-  el.style.display = hidden ? "block" : "none";
-};
-
-render();
     } catch(err){
       alert("Backup konnte nicht geladen werden.");
     }
@@ -1446,6 +1438,16 @@ window.showMissingForDish = function(i){
 };
 
 
+
+window.toggleSection = function(id, btn){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const isHidden = getComputedStyle(el).display === "none";
+  el.style.display = isHidden ? "block" : "none";
+  if(btn){
+    btn.textContent = (isHidden ? "▼ " : "▶ ") + btn.dataset.label;
+  }
+};
 
 render();
 </script>
