@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💛 Familie Hanst Wochenplan V21 bereinigt</title>
+  <title>💛 Familie Hanst Wochenplan V21 Fix</title>
   <style>
     :root{
       --bg:#fff8fc; --bg2:#f7f7ff; --card:#fff; --text:#2f2a33; --muted:#746d78;
@@ -49,6 +49,11 @@
     .shop-edit{border:1px dashed var(--border);border-radius:10px;padding:10px;background:#fafaff;min-height:24px}
     .shop-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .today-card{background:linear-gradient(180deg,#fff,#fff7fb);border:1px solid var(--border)}
+    .week-details{margin-top:6px;border:1px solid var(--border);border-radius:12px;background:#faf7fb;overflow:hidden}
+    .week-details summary{cursor:pointer;list-style:none;padding:10px 12px;font-weight:700;color:#6b4b5d}
+    .week-details summary::-webkit-details-marker{display:none}
+    .week-details-body{padding:0 12px 12px 12px}
+    .week-ingredients{margin:0;color:var(--muted);font-size:14px;white-space:pre-wrap}
   
 /* MOBILE OPTIMIERUNG */
 @media (max-width:700px){
@@ -79,6 +84,7 @@
       <button onclick="randomWeek()">🎲 Zufallsplan</button>
       <button class="soft" onclick="showTodayCooking()">🍳 Heute kochen</button>
       <button class="soft" onclick="clearWeek()">Wochenplan leeren</button>
+      <button class="soft" onclick="printWeek()">🖨️ Drucken / PDF</button>
       <button class="soft" onclick="downloadBackup()">Backup speichern</button>
       <label class="soft" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;cursor:pointer;">
         Backup laden
@@ -122,8 +128,7 @@ Hackfleisch"></textarea>
     <section class="card">
       <h2 class="section-title">Gericht hinzufügen / bearbeiten</h2>
       <input id="dishName" placeholder="Gericht">
-      <div class="row"><input id="importUrl" placeholder="Rezept URL einfügen (Chefkoch, Blog, etc.)"><button type="button" class="soft small" onclick="importRecipe()">🌐 Rezept importieren</button></div>
-      <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile:
+            <textarea id="dishIngredients" placeholder="Eine Zutat pro Zeile:
 Name|Menge|Einheit|Bereich|frisch
 
 Beispiel:
@@ -135,7 +140,7 @@ Zwiebeln|2|Stück|Obst & Gemüse|frisch"></textarea>
       <div class="row"><label><input id="dishFavorite" type="checkbox" style="width:auto"> Favorit</label></div>
       <input id="dishImageUrl" placeholder="Bild-URL zum Rezept (optional)">
       <input id="dishImageFile" type="file" accept="image/*">
-      <button type="button" class="soft small" onclick="scanRecipeImage()">📷 Zutaten aus Foto lesen (Beta)</button>
+      <label style="display:flex;align-items:center;gap:8px;margin:6px 0 2px 0;"><input id="dishRemoveImage" type="checkbox" style="width:auto"> Bild beim Speichern entfernen</label>
       <input id="dishDocFile" type="file" accept=".pdf,.doc,.docx,.txt">
       <div class="small-note">Optional kannst du auch eine Rezept‑Datei (PDF, DOC, TXT) anhängen.</div>
       <div class="small-note">Bei Foto-Dateien wird das Bild automatisch verkleinert und komprimiert, damit Firebase es speichern kann.</div>
@@ -272,6 +277,7 @@ const AREA_TO_SUPERMARKET = {
 let state = {
   dishes: [],
   week: ["","","","","","",""],
+  notes: ["","","","","","",""],
   notes: ["","","","","","",""],
   servings: 2,
   shopping: [],
@@ -622,19 +628,39 @@ window.addDish = async function(){
   const file = document.getElementById("dishImageFile").files[0];
   if(!name) return;
 
+  const existingDish = state.editIndex !== null ? state.dishes[state.editIndex] : null;
+
+  let docData = existingDish?.doc || "";
   const docFile = document.getElementById("dishDocFile").files[0];
-  window._lastDoc = "";
   if(docFile){
     const reader = new FileReader();
-    await new Promise(res=>{
-      reader.onload=e=>{ window._lastDoc = e.target.result; res(); };
+    docData = await new Promise(res=>{
+      reader.onload=e=>res(e.target.result);
       reader.readAsDataURL(docFile);
     });
   }
 
-
   const finish = async (img) => {
-    const dish = { name, hint, image: img || imageUrl || "", doc: window._lastDoc || "", favorite, ingredients };
+    let finalImage = existingDish?.image || "";
+
+    if(imageUrl){
+      finalImage = imageUrl;
+    }
+
+    if(img){
+      finalImage = img;
+    }
+
+    const dish = {
+      name,
+      hint,
+      category: category || existingDish?.category || "",
+      image: finalImage,
+      doc: docData,
+      favorite,
+      ingredients
+    };
+
     if(state.editIndex !== null){
       const old = state.dishes[state.editIndex]?.name || "";
       state.dishes[state.editIndex] = dish;
@@ -645,12 +671,15 @@ window.addDish = async function(){
     } else {
       state.dishes.push(dish);
     }
+
     document.getElementById("dishName").value = "";
     document.getElementById("dishIngredients").value = "";
     document.getElementById("dishHint").value = "";
     document.getElementById("dishCategory").value = "";
     document.getElementById("dishImageUrl").value = "";
     document.getElementById("dishImageFile").value = "";
+    document.getElementById("dishRemoveImage").checked = false;
+    document.getElementById("dishDocFile").value = "";
     document.getElementById("dishFavorite").checked = false;
     await save();
     render();
@@ -677,6 +706,8 @@ window.editDish = function(i){
   document.getElementById("dishCategory").value = dish.category || "";
   document.getElementById("dishImageUrl").value = dish.image && !String(dish.image).startsWith("data:") ? dish.image : "";
   document.getElementById("dishImageFile").value = "";
+  document.getElementById("dishRemoveImage").checked = false;
+  document.getElementById("dishDocFile").value = "";
   document.getElementById("dishFavorite").checked = !!dish.favorite;
   state.editIndex = i;
   document.getElementById("saveDishBtn").textContent = "Änderungen speichern";
@@ -692,6 +723,8 @@ window.cancelEdit = function(){
     document.getElementById("dishCategory").value = "";
   document.getElementById("dishImageUrl").value = "";
   document.getElementById("dishImageFile").value = "";
+  document.getElementById("dishRemoveImage").checked = false;
+  document.getElementById("dishDocFile").value = "";
   document.getElementById("dishFavorite").checked = false;
   document.getElementById("saveDishBtn").textContent = "Speichern";
   document.getElementById("cancelEditBtn").style.display = "none";
@@ -740,6 +773,10 @@ window.rollDay = async function(i){
   renderWeek();
   renderShop();
   renderTodayCard();
+};
+
+window.printWeek = function(){
+  window.print();
 };
 
 window.clearWeek = async function(){
@@ -1052,15 +1089,40 @@ function renderWeek(){
   const box = document.getElementById("week");
   box.innerHTML = "";
   const optionsAll = state.dishes.map(d => d.name);
-  DAYS.forEach((day,i) => {
-    const options = optionsAll.map(name => `<option value="${escapeHtml(name)}" ${state.week[i]===name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("");
+
+  DAYS.forEach((day, i) => {
+    const options = optionsAll
+      .map(name => `<option value="${escapeHtml(name)}" ${state.week[i] === name ? "selected" : ""}>${escapeHtml(name)}</option>`)
+      .join("");
+
+    const noteClass = (state.notes && state.notes[i]) ? "week-note has-note" : "week-note";
+    const selectedDish = state.dishes.find(d => d.name === state.week[i]);
+    const ingredientPreview = selectedDish
+      ? (selectedDish.ingredients || []).map(ingredientLabel).join(", ")
+      : "";
+
     const row = document.createElement("div");
     row.className = "weekrow";
     row.innerHTML = `<div class="title">${day}</div>
       <div class="daycontent">
         <input value="${escapeHtml(state.week[i] || "")}" oninput="updateDay(${i}, this.value)">
-        <select onchange="updateDay(${i}, this.value)"><option value="">Gericht wählen</option>${options}</select>
-        <<textarea class="week-note ${state.notes?.[i] ? "has-note" : ""}" placeholder="📝 Notiz, z.B. Salat dazu" oninput="updateNote(${i}, this.value)">${escapeHtml(state.notes?.[i] || "")}</textarea>
+        <select onchange="updateDay(${i}, this.value)">
+          <option value="">Gericht wählen</option>
+          ${options}
+        </select>
+        ${selectedDish ? `
+          <details class="week-details">
+            <summary>👀 Zutaten & Bild anzeigen</summary>
+            <div class="week-details-body">
+              ${selectedDish.hint ? `<div class="hint">${escapeHtml(selectedDish.hint)}</div>` : ""}
+              <div class="small-note">${selectedDish.category ? `Kategorie: ${escapeHtml(selectedDish.category)}` : "Gespeichertes Rezept"}</div>
+              <div class="week-ingredients">${escapeHtml(ingredientPreview || "Keine Zutaten hinterlegt.")}</div>
+              ${selectedDish.image ? `<img class="recipe-image" src="${selectedDish.image}" alt="Rezeptbild">` : `<div class="small-note" style="margin-top:8px">Kein Bild gespeichert.</div>`}
+              ${selectedDish.doc ? `<div class="actions"><a href="${selectedDish.doc}" target="_blank"><button class="soft small">📄 Rezept öffnen</button></a></div>` : ""}
+            </div>
+          </details>
+        ` : ""}
+        <textarea class="${noteClass}" placeholder="📝 Notiz, z.B. Salat dazu" oninput="updateNote(${i}, this.value)">${escapeHtml((state.notes && state.notes[i]) || "")}</textarea>
       </div>
       <button class="small" onclick="rollDay(${i})">🎲</button>`;
     box.appendChild(row);
@@ -1211,31 +1273,6 @@ onSnapshot(ref, snap => {
 });
 
 
-async function scanRecipeImage(){
-  const file = document.getElementById("dishImageFile").files[0];
-  if(!file){
-    alert("Bitte zuerst ein Foto auswählen.");
-    return;
-  }
-  const status = document.getElementById("status");
-  status.textContent = "Lese Text aus Bild…";
-
-  const script = document.createElement("script");
-  script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-  script.onload = async () => {
-    const { createWorker } = Tesseract;
-    const worker = await createWorker("deu");
-    const { data } = await worker.recognize(file);
-    await worker.terminate();
-
-    const lines = data.text.split("\n").map(x=>x.trim()).filter(x=>x.length>2);
-    const textarea = document.getElementById("dishIngredients");
-    textarea.value = lines.join("\n");
-
-    status.textContent = "Text erkannt – bitte Zutaten kurz prüfen.";
-  };
-  document.body.appendChild(script);
-}
 
 window.duplicateDish = async function(i){
   const dish = state.dishes[i];
@@ -1248,38 +1285,6 @@ window.duplicateDish = async function(i){
 };
 
 
-window.importRecipe = async function(){
-  const url = document.getElementById("importUrl").value.trim();
-  if(!url){ alert("Bitte eine Rezept URL einfügen."); return; }
-  const status = document.getElementById("status");
-  status.textContent = "Lade Rezept…";
-  try{
-    const proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
-    const res = await fetch(proxy);
-    const html = await res.text();
-
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi,"")
-      .replace(/<style[\s\S]*?<\/style>/gi,"")
-      .replace(/<[^>]+>/g,"\n")
-      .split("\n")
-      .map(x=>x.trim())
-      .filter(x=>x.length>2);
-
-    const ingredients = text.filter(x =>
-      /(g|kg|ml|l|stück|tl|el)/i.test(x)
-    ).slice(0,25);
-
-    if(ingredients.length){
-      document.getElementById("dishIngredients").value = ingredients.join("\n");
-      status.textContent = "Zutaten importiert – bitte kurz prüfen.";
-    }else{
-      status.textContent = "Keine Zutaten automatisch erkannt.";
-    }
-  }catch(e){
-    status.textContent = "Import fehlgeschlagen.";
-  }
-};
 
 
 
